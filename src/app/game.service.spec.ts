@@ -15,6 +15,10 @@ function configureWithDice(values: number[]): GameService {
   return TestBed.inject(GameService);
 }
 
+function selectDice(service: GameService, indices: number[]): void {
+  for (const index of indices) service.toggleDieSelection(index);
+}
+
 describe('GameService', () => {
   beforeEach(() => {
     vi.useFakeTimers();
@@ -71,7 +75,8 @@ describe('GameService', () => {
     await Promise.all([service.rollDice(), vi.runAllTimersAsync()]);
 
     const stateBefore = service.activeState();
-    const accepted = await service.rollAgain([1]); // die value 2, doesn't score
+    selectDice(service, [1]); // die value 2, doesn't score
+    const accepted = await service.rollAgain();
     expect(accepted).toBe(false);
     expect(service.isInputLocked()).toBe(false);
     expect(service.activeState()).toEqual(stateBefore);
@@ -82,13 +87,29 @@ describe('GameService', () => {
     service.startGame('medium');
     await Promise.all([service.rollDice(), vi.runAllTimersAsync()]);
 
-    const [accepted] = await Promise.all([service.rollAgain([0, 3, 4, 5]), vi.runAllTimersAsync()]);
+    selectDice(service, [0, 3, 4, 5]);
+    const [accepted] = await Promise.all([service.rollAgain(), vi.runAllTimersAsync()]);
     expect(accepted).toBe(true);
     expect(service.activeState()?.turnState).toEqual({
       phase: 'awaitingSelection',
       turnScore: 500,
       rolledDice: [6, 5],
     });
+  });
+
+  it('pass with nothing selected banks the turn score already accumulated, ignoring the current roll', async () => {
+    const service = configureWithDice([1, 2, 3, 4, 4, 4, 6, 5]);
+    service.startGame('medium');
+    await Promise.all([service.rollDice(), vi.runAllTimersAsync()]);
+    selectDice(service, [0, 3, 4, 5]);
+    await Promise.all([service.rollAgain(), vi.runAllTimersAsync()]);
+
+    // Now sitting on a second roll [6, 5] with 500 already banked-in-progress.
+    // Passing with an empty selection should bank exactly that 500, not
+    // require engaging with the new roll (which does have a scoring 5 in it).
+    const [accepted] = await Promise.all([service.pass(), vi.runAllTimersAsync()]);
+    expect(accepted).toBe(true);
+    expect(service.activeState()?.turnState).toEqual({ phase: 'banked', turnScore: 500 });
   });
 
   it('finishTurn folds a bust into the next player turn, then the AI plays automatically', async () => {
@@ -113,7 +134,8 @@ describe('GameService', () => {
 
     await Promise.all([service.rollDice(), vi.runAllTimersAsync()]);
 
-    const [accepted] = await Promise.all([service.pass([0, 1, 2, 3, 4, 5]), vi.runAllTimersAsync()]);
+    selectDice(service, [0, 1, 2, 3, 4, 5]);
+    const [accepted] = await Promise.all([service.pass(), vi.runAllTimersAsync()]);
     expect(accepted).toBe(true);
     expect(service.activeState()?.turnState).toEqual({ phase: 'banked', turnScore: 1500 });
 
@@ -133,5 +155,30 @@ describe('GameService', () => {
     expect(match.winner).toBe('ai');
     expect(match.aiTotalScore).toBe(1500);
     expect(match.turnState).toEqual({ phase: 'banked', turnScore: 1500 });
+  });
+
+  it('reveals the AI selection one die at a time, pausing before, between, and after, before submitting', async () => {
+    const service = configureWithDice([1, 5, 2, 3, 4, 6]); // indices 0 and 1 score individually
+    service.startGame('easy', 'ai');
+
+    await vi.advanceTimersByTimeAsync(400); // the roll stages
+    expect(service.activeState()?.turnState).toEqual({
+      phase: 'awaitingSelection',
+      turnScore: 0,
+      rolledDice: [1, 5, 2, 3, 4, 6],
+    });
+    expect(service.selectedIndices()).toEqual([]); // pause before touching anything
+
+    await vi.advanceTimersByTimeAsync(1000); // first die (the 1) revealed
+    expect(service.selectedIndices()).toEqual([0]);
+    expect(service.activeState()?.turnState.phase).toBe('awaitingSelection');
+
+    await vi.advanceTimersByTimeAsync(1000); // second die (the 5) revealed
+    expect(service.selectedIndices()).toEqual([0, 1]);
+    // Still just sitting on the finished selection, not yet submitted.
+    expect(service.activeState()?.turnState.phase).toBe('awaitingSelection');
+
+    await vi.runAllTimersAsync(); // final observe pause, then submit and play out the rest of the turn
+    expect(service.selectedIndices()).toEqual([]); // cleared once submitted
   });
 });

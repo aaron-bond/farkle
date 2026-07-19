@@ -36,7 +36,7 @@
         <button (click)="rollAgain()" [disabled]="isInputLocked() || selectedIndices().length === 0">
           Roll Again
         </button>
-        <button (click)="pass()" [disabled]="isInputLocked() || selectedIndices().length === 0">Pass</button>
+        <button (click)="pass()" [disabled]="isInputLocked()">Pass</button>
         @if (selectionError()) {
           <p>{{ selectionError() }}</p>
         }

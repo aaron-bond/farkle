@@ -13,15 +13,23 @@ export const RANDOM_SOURCE = new InjectionToken<() => number>('RANDOM_SOURCE', {
 // Milestone 4 replaces this with real `animationend` event gating.
 const STAGING_DELAY_MS = 400;
 
+// Pause after each die the AI selects, so a human watching sees it build up
+// its selection one die at a time - like a real player clicking through the
+// dice - rather than the whole selection appearing at once and submitting
+// before anyone can register what happened.
+const AI_THINKING_DELAY_MS = 1000;
+
 @Injectable({ providedIn: 'root' })
 export class GameService {
   private readonly random = inject(RANDOM_SOURCE);
 
   private readonly _activeState = signal<MatchState | null>(null);
   private readonly _isInputLocked = signal(false);
+  private readonly _selectedIndices = signal<number[]>([]);
 
   readonly activeState = this._activeState.asReadonly();
   readonly isInputLocked = this._isInputLocked.asReadonly();
+  readonly selectedIndices = this._selectedIndices.asReadonly();
 
   startGame(difficulty: Difficulty, startingPlayer: PlayerId = 'human'): void {
     const match = startMatch(difficulty, startingPlayer);
@@ -33,6 +41,15 @@ export class GameService {
 
   resetGame(): void {
     this._activeState.set(null);
+    this._selectedIndices.set([]);
+  }
+
+  toggleDieSelection(index: number): void {
+    const match = this._activeState();
+    if (!match || this._isInputLocked() || match.activePlayer !== 'human') return;
+
+    const current = this._selectedIndices();
+    this._selectedIndices.set(current.includes(index) ? current.filter((i) => i !== index) : [...current, index]);
   }
 
   async rollDice(): Promise<void> {
@@ -48,24 +65,39 @@ export class GameService {
   // validate the selection and immediately continue into the next roll in a
   // single staged transition, rather than stopping at an intermediate 'ready'
   // screen the player would have to click through.
-  async rollAgain(selectedIndices: number[]): Promise<boolean> {
+  async rollAgain(): Promise<boolean> {
     const match = this._activeState();
     if (!match || this._isInputLocked() || match.activePlayer !== 'human') return false;
     const turnState = match.turnState;
     if (turnState.phase !== 'awaitingSelection') return false;
 
-    return this.performSelectionAndRoll(match, turnState, selectedIndices);
+    const accepted = await this.performSelectionAndRoll(match, turnState, this._selectedIndices());
+    if (accepted) this._selectedIndices.set([]);
+    return accepted;
   }
 
   // Same idea as rollAgain, but banks the accumulated turn score instead of
-  // continuing to roll.
-  async pass(selectedIndices: number[]): Promise<boolean> {
+  // continuing to roll. Passing with nothing selected is allowed - the
+  // mandatory-set-aside rule only gates continuing to roll, not giving up
+  // and banking whatever was already accumulated earlier this turn. This
+  // matters as an escape hatch for a player who can't tell what's scoreable
+  // in the current roll rather than trapping them into a forced guess.
+  async pass(): Promise<boolean> {
     const match = this._activeState();
     if (!match || this._isInputLocked() || match.activePlayer !== 'human') return false;
     const turnState = match.turnState;
     if (turnState.phase !== 'awaitingSelection') return false;
 
-    return this.performSelectionAndBank(match, turnState, selectedIndices);
+    const selectedIndices = this._selectedIndices();
+    if (selectedIndices.length === 0) {
+      await this.stageTurnState(match, { phase: 'banked', turnScore: turnState.turnScore });
+      this._selectedIndices.set([]);
+      return true;
+    }
+
+    const accepted = await this.performSelectionAndBank(match, turnState, selectedIndices);
+    if (accepted) this._selectedIndices.set([]);
+    return accepted;
   }
 
   // The turn's own result (rolled dice, "Farkle!", "Banked 550") is staged and
@@ -80,7 +112,8 @@ export class GameService {
     await this.performFinishTurn(match);
   }
 
-  // Drives a full AI turn autonomously: roll, take every scoring die, decide
+  // Drives a full AI turn autonomously: roll, take every scoring die (revealed
+  // one at a time, pausing between each so the selection is visible), decide
   // bank-vs-continue via the personality heuristic, repeat until it busts or
   // banks, then fold the result into the next turn exactly like a human's
   // finishTurn() would. Each step still goes through the same staging gate
@@ -110,15 +143,33 @@ export class GameService {
         difficulty: match.difficulty,
       });
 
+      await this.revealAiSelection(indices);
+
       if (continueRolling) {
         await this.performSelectionAndRoll(match, turnState, indices);
       } else {
         await this.performSelectionAndBank(match, turnState, indices);
       }
+      this._selectedIndices.set([]);
       match = this._activeState()!;
     }
 
     await this.performFinishTurn(match);
+  }
+
+  // Ticks the AI's selection up one die at a time, pausing before the first
+  // pick (time to look at the roll) and after every pick including the last
+  // (time to see the finished selection before it submits) - so a human
+  // watching can actually follow it, rather than the whole selection
+  // appearing at once right before it submits.
+  private async revealAiSelection(indices: number[]): Promise<void> {
+    this._isInputLocked.set(true);
+    this._selectedIndices.set([]);
+    await this.wait(AI_THINKING_DELAY_MS);
+    for (const index of indices) {
+      this._selectedIndices.update((current) => [...current, index]);
+      await this.wait(AI_THINKING_DELAY_MS);
+    }
   }
 
   private async performRoll(match: MatchState, turnState: Extract<TurnState, { phase: 'ready' }>): Promise<void> {

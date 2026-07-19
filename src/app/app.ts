@@ -14,6 +14,7 @@ export class App {
 
   readonly activeState = this.game.activeState;
   readonly isInputLocked = this.game.isInputLocked;
+  readonly selectedIndices = this.game.selectedIndices;
 
   readonly turnState = computed(() => this.activeState()?.turnState ?? null);
   readonly phase = computed(() => this.turnState()?.phase ?? null);
@@ -27,7 +28,6 @@ export class App {
     return t?.phase === 'awaitingSelection' ? t.rolledDice : [];
   });
 
-  readonly selectedIndices = signal<number[]>([]);
   readonly selectionError = signal<string | null>(null);
   readonly rollGeneration = signal(0);
 
@@ -36,14 +36,12 @@ export class App {
   }
 
   resetGame(): void {
-    this.selectedIndices.set([]);
     this.selectionError.set(null);
     this.game.resetGame();
   }
 
   toggleDieSelection(index: number): void {
-    const current = this.selectedIndices();
-    this.selectedIndices.set(current.includes(index) ? current.filter((i) => i !== index) : [...current, index]);
+    this.game.toggleDieSelection(index);
   }
 
   async rollDice(): Promise<void> {
@@ -53,23 +51,20 @@ export class App {
 
   async rollAgain(): Promise<void> {
     this.selectionError.set(null);
-    const accepted = await this.game.rollAgain(this.selectedIndices());
+    const accepted = await this.game.rollAgain();
     if (!accepted) {
       this.selectionError.set('That selection does not score - choose a different combination.');
       return;
     }
-    this.selectedIndices.set([]);
     this.rollGeneration.update((n) => n + 1);
   }
 
   async pass(): Promise<void> {
     this.selectionError.set(null);
-    const accepted = await this.game.pass(this.selectedIndices());
+    const accepted = await this.game.pass();
     if (!accepted) {
       this.selectionError.set('That selection does not score - choose a different combination.');
-      return;
     }
-    this.selectedIndices.set([]);
   }
 
   async finishTurn(): Promise<void> {
