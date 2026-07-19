@@ -1,10 +1,11 @@
 import { Component, computed, inject, signal } from '@angular/core';
 import type { Difficulty } from '../core/match.js';
+import { Die } from './die/die.js';
 import { GameService } from './game.service.js';
 
 @Component({
   selector: 'app-root',
-  imports: [],
+  imports: [Die],
   templateUrl: './app.html',
   styleUrl: './app.css',
 })
@@ -28,6 +29,7 @@ export class App {
 
   readonly selectedIndices = signal<number[]>([]);
   readonly selectionError = signal<string | null>(null);
+  readonly rollGeneration = signal(0);
 
   startGame(difficulty: Difficulty): void {
     this.game.startGame(difficulty);
@@ -46,6 +48,7 @@ export class App {
 
   async rollDice(): Promise<void> {
     await this.game.rollDice();
+    this.rollGeneration.update((n) => n + 1);
   }
 
   async rollAgain(): Promise<void> {
@@ -56,6 +59,7 @@ export class App {
       return;
     }
     this.selectedIndices.set([]);
+    this.rollGeneration.update((n) => n + 1);
   }
 
   async pass(): Promise<void> {

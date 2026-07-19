@@ -1,0 +1,17 @@
+<button
+  type="button"
+  class="die"
+  [class.selected]="selected()"
+  [disabled]="disabled()"
+  [attr.aria-pressed]="selected()"
+  (click)="onClick()"
+>
+  <span class="cube" [style.transform]="cubeTransform()">
+    <span class="face face-front"></span>
+    <span class="face face-back"></span>
+    <span class="face face-right"></span>
+    <span class="face face-left"></span>
+    <span class="face face-top"></span>
+    <span class="face face-bottom"></span>
+  </span>
+</button>

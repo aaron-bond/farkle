@@ -1,0 +1,69 @@
+.die {
+  --die-size: 60px;
+  all: unset;
+  cursor: pointer;
+  display: inline-block;
+  width: var(--die-size);
+  height: var(--die-size);
+  margin: 8px;
+  perspective: 400px;
+}
+
+.die:disabled {
+  cursor: default;
+}
+
+.cube {
+  position: relative;
+  display: block;
+  width: 100%;
+  height: 100%;
+  transform-style: preserve-3d;
+  transition: transform 500ms ease;
+  pointer-events: none;
+}
+
+.face {
+  position: absolute;
+  inset: 0;
+  width: var(--die-size);
+  height: var(--die-size);
+  box-sizing: border-box;
+  border-radius: 6px;
+  background-size: 80%;
+  background-position: center;
+  background-repeat: no-repeat;
+  image-rendering: pixelated;
+  backface-visibility: hidden;
+  pointer-events: none;
+  transition: filter 200ms ease;
+}
+
+.face-front {
+  background-image: url('/dice/die-1.png');
+  transform: translateZ(calc(var(--die-size) / 2));
+}
+.face-back {
+  background-image: url('/dice/die-6.png');
+  transform: rotateY(180deg) translateZ(calc(var(--die-size) / 2));
+}
+.face-right {
+  background-image: url('/dice/die-2.png');
+  transform: rotateY(90deg) translateZ(calc(var(--die-size) / 2));
+}
+.face-left {
+  background-image: url('/dice/die-5.png');
+  transform: rotateY(-90deg) translateZ(calc(var(--die-size) / 2));
+}
+.face-top {
+  background-image: url('/dice/die-3.png');
+  transform: rotateX(90deg) translateZ(calc(var(--die-size) / 2));
+}
+.face-bottom {
+  background-image: url('/dice/die-4.png');
+  transform: rotateX(-90deg) translateZ(calc(var(--die-size) / 2));
+}
+
+.die.selected .face {
+  filter: drop-shadow(0 0 4px gold);
+}

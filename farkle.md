@@ -212,22 +212,23 @@ To provide native-app sensory integration directly through the browser shell, th
 
 ### **Milestone 1: The Headless Core (Pure JS/TS Logic)**
 
-* \[ \] Code the pure data schemas and interfaces.  
-* \[ \] Implement the ScoringEngine recursive pattern-matching logic.  
-* \[ \] Write full unit test suites for edge-case score arrays (straights, matching pairs, partial scores).  
-* \[ \] Create a terminal-based CLI loop to verify the core game loop mechanics without any UI code.
+* \[x\] Code the pure data schemas and interfaces.  
+* \[x\] Implement the ScoringEngine recursive pattern-matching logic.  
+* \[x\] Write full unit test suites for edge-case score arrays (straights, matching pairs, partial scores).  
+* \[ \] ~~Create a terminal-based CLI loop~~ \- deliberately skipped; Vitest coverage plus the Angular wireframe (Milestone 3) made this redundant for now.
 
 ### **Milestone 2: Storage & Session Resilience**
 
-* \[ \] Build out the abstract StorageAccessProvider interface.  
-* \[ \] Implement the LocalStorage adapter proxy.  
-* \[ \] Verify through automation that killing the runtime mid-turn and re-instantiating the logic tree successfully hydrates the game state to the exact step.
+* \[x\] Build out the abstract StorageAccessProvider interface.  
+* \[x\] Implement the LocalStorage adapter proxy.  
+* \[x\] Verify through automated round-trip tests that a serialized game state (including an in-progress turn) hydrates back byte-identical.  
+* \[ \] **Not yet wired up:** `GameService` doesn't call `saveGameState`/`loadGameState` anywhere yet \- the shim is built and tested in isolation, but the running app doesn't actually persist across a reload yet. Needs hooking in before Milestone 2 is truly done end-to-end.
 
 ### **Milestone 3: Frame, State Gate, & Wireframe**
 
-* \[ \] Scaffold the UI structure (e.g., plain Angular/Vue/React template blocks with unstyled interaction elements).  
-* \[ \] Implement the async StagingState transaction gatekeeper.  
-* \[ \] Use artificial timers (setTimeout promises) to guarantee that user inputs are locked correctly while the staging phase resolves.
+* \[x\] Scaffold the UI structure (Angular, unstyled interaction elements).  
+* \[x\] Implement the async StagingState transaction gatekeeper (`GameService`'s stage/promote pattern).  
+* \[x\] Use artificial timers (setTimeout promises) to guarantee that user inputs are locked correctly while the staging phase resolves.
 
 ### **Milestone 4: CSS Aesthetics, Hardware Hooks & AI**
 
