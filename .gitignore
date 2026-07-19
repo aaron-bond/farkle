@@ -1,8 +1,7 @@
 # See https://docs.github.com/get-started/getting-started-with-git/ignoring-files for more about ignoring files.
 
 # Compiled output
-# /dist is intentionally tracked for now so GitHub Pages can serve it directly;
-# move this back once a GH Actions build step replaces the manual commit.
+/dist
 /tmp
 /out-tsc
 /bazel-out
