@@ -1,4 +1,4 @@
-name: Deploy dist to GitHub Pages
+name: Deploy Farkle to GitHub Pages
 
 on:
   push:
