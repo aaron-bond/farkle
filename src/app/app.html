@@ -1,0 +1,58 @@
+<h1>Farkle</h1>
+
+@if (!activeState()) {
+  <button (click)="startGame('easy')">Easy (1500)</button>
+  <button (click)="startGame('medium')">Medium (3000)</button>
+  <button (click)="startGame('hard')">Hard (5000)</button>
+} @else {
+  <p>
+    You: {{ activeState()!.playerTotalScore }} | AI: {{ activeState()!.aiTotalScore }} | Target:
+    {{ activeState()!.targetScore }}
+  </p>
+
+  @if (activeState()!.winner; as winner) {
+    <p>{{ winner === 'human' ? 'You win!' : 'AI wins!' }}</p>
+    <button (click)="resetGame()">Play again</button>
+  } @else {
+    <p>{{ activeState()!.activePlayer === 'human' ? "Your turn" : "AI's turn" }}</p>
+
+    @switch (phase()) {
+      @case ('ready') {
+        <button (click)="rollDice()" [disabled]="isInputLocked()">Roll {{ diceToRoll() }} dice</button>
+      }
+      @case ('awaitingSelection') {
+        <p>Turn score so far: {{ turnScore() }}</p>
+        <p>Rolled: {{ rolledDice().join(', ') }}</p>
+        <ul>
+          @for (die of rolledDice(); track $index) {
+            <li>
+              <label>
+                <input
+                  type="checkbox"
+                  [checked]="selectedIndices().includes($index)"
+                  (change)="toggleDieSelection($index)"
+                />
+                {{ die }}
+              </label>
+            </li>
+          }
+        </ul>
+        <button (click)="rollAgain()" [disabled]="isInputLocked() || selectedIndices().length === 0">
+          Roll Again
+        </button>
+        <button (click)="pass()" [disabled]="isInputLocked() || selectedIndices().length === 0">Pass</button>
+        @if (selectionError()) {
+          <p>{{ selectionError() }}</p>
+        }
+      }
+      @case ('busted') {
+        <p>Farkle! Turn lost.</p>
+        <button (click)="finishTurn()" [disabled]="isInputLocked()">Continue</button>
+      }
+      @case ('banked') {
+        <p>Banked {{ turnScore() }} points.</p>
+        <button (click)="finishTurn()" [disabled]="isInputLocked()">Continue</button>
+      }
+    }
+  }
+}
