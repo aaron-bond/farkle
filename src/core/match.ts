@@ -16,6 +16,7 @@ export interface MatchState {
   aiTotalScore: number;
   activePlayer: PlayerId;
   targetScore: number;
+  difficulty: Difficulty;
   winner: PlayerId | null;
 }
 
@@ -26,6 +27,7 @@ export function startMatch(difficulty: Difficulty, startingPlayer: PlayerId = 'h
     aiTotalScore: 0,
     activePlayer: startingPlayer,
     targetScore: DIFFICULTY_TARGET_SCORES[difficulty],
+    difficulty,
     winner: null,
   };
 }
@@ -55,6 +57,7 @@ export function advanceTurn(match: MatchState, turnState: TurnState): MatchState
     aiTotalScore,
     activePlayer: isHumanTurn ? 'ai' : 'human',
     targetScore: match.targetScore,
+    difficulty: match.difficulty,
     winner: null,
   };
 }

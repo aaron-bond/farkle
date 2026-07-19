@@ -91,16 +91,20 @@ describe('GameService', () => {
     });
   });
 
-  it('finishTurn folds a bust into the next player turn and switches players', async () => {
+  it('finishTurn folds a bust into the next player turn, then the AI plays automatically', async () => {
     const service = configureWithDice([2, 3, 4, 6, 6, 3]);
     service.startGame('medium');
     await Promise.all([service.rollDice(), vi.runAllTimersAsync()]);
     await Promise.all([service.finishTurn(), vi.runAllTimersAsync()]);
 
+    // Control passes to the AI, which immediately plays its own turn - with
+    // this repeating fake dice sequence it also busts right away, handing
+    // control straight back to the human.
     const match = service.activeState()!;
     expect(match.turnState).toEqual({ phase: 'ready', turnScore: 0, diceToRoll: 6, isHotDice: false });
-    expect(match.activePlayer).toBe('ai');
+    expect(match.activePlayer).toBe('human');
     expect(match.playerTotalScore).toBe(0);
+    expect(match.aiTotalScore).toBe(0);
   });
 
   it('banking a full straight on easy difficulty reaches the target and declares the winner', async () => {
@@ -117,5 +121,17 @@ describe('GameService', () => {
     const match = service.activeState()!;
     expect(match.winner).toBe('human');
     expect(match.playerTotalScore).toBe(1500);
+  });
+
+  it('plays a full AI turn automatically: takes every scoring die and banks a winning roll', async () => {
+    const service = configureWithDice([1, 2, 3, 4, 5, 6]);
+    service.startGame('easy', 'ai');
+
+    await vi.runAllTimersAsync();
+
+    const match = service.activeState()!;
+    expect(match.winner).toBe('ai');
+    expect(match.aiTotalScore).toBe(1500);
+    expect(match.turnState).toEqual({ phase: 'banked', turnScore: 1500 });
   });
 });

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { evaluateSelection } from './scoringEngine.js';
+import { evaluateSelection, findAutoScoringSelection } from './scoringEngine.js';
 
 describe('evaluateSelection', () => {
   it('scores a single 1 and single 5', () => {
@@ -51,5 +51,26 @@ describe('evaluateSelection', () => {
 
   it('rejects an empty selection', () => {
     expect(evaluateSelection([])).toEqual({ isValid: false, score: 0 });
+  });
+});
+
+describe('findAutoScoringSelection', () => {
+  it('finds the single scoring die among dead dice, by original index', () => {
+    expect(findAutoScoringSelection([2, 3, 1, 4, 6])).toEqual({ indices: [2], score: 100 });
+  });
+
+  it('finds every scoring die across independent groups, leaving dead dice out', () => {
+    // indices: 0,1,2 -> three 1s (1000); 4 -> single 5 (50); 3,5 -> dead (2, 6)
+    expect(findAutoScoringSelection([1, 1, 1, 2, 5, 6])).toEqual({ indices: [0, 1, 2, 4], score: 1050 });
+  });
+
+  it('finds a full straight and reports all six indices', () => {
+    const result = findAutoScoringSelection([6, 5, 4, 3, 2, 1]);
+    expect(result.score).toBe(1500);
+    expect(result.indices.slice().sort((a, b) => a - b)).toEqual([0, 1, 2, 3, 4, 5]);
+  });
+
+  it('returns no indices and zero score when nothing in the roll scores', () => {
+    expect(findAutoScoringSelection([2, 3, 4, 6, 6, 3])).toEqual({ indices: [], score: 0 });
   });
 });

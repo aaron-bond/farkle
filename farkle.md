@@ -235,8 +235,8 @@ To provide native-app sensory integration directly through the browser shell, th
 * \[x\] Replace plain numerical buttons with DOM cubes styled with CSS 3D transforms.  
 * \[x\] Die-face textures sourced (user-provided pixel art) and wired in as the CSS cube face backgrounds.  
 * \[ \] Bind state machine staging variables directly to the animationend lifecycle hooks \- still using the artificial setTimeout delay from Milestone 3, not real transition-driven gating.  
-* \[ \] Inject hardware API bindings (vibrate, wakeLock) inside corresponding event streams.  
-* \[ \] Write the Heuristic AI Opponent implementation and hook it into the GamePlayer lifecycle interface.
+* \[ \] Inject hardware API bindings (vibrate, wakeLock) inside corresponding event streams \- deferred for now, nice-to-have for later.  
+* \[x\] Write the Heuristic AI Opponent implementation and hook it into the turn/match state machine. Bust-probability table is derived by brute-force enumeration against the real scoring rules (not hardcoded guesses); difficulty tiers map to risk-tolerance/greed personality parameters; the AI drives itself through GameService's existing staging gate.
 
 ### **Milestone 5: PWA Packaging**
 

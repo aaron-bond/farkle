@@ -10,6 +10,7 @@ describe('startMatch', () => {
       aiTotalScore: 0,
       activePlayer: 'human',
       targetScore: 1500,
+      difficulty: 'easy',
       winner: null,
     });
     expect(startMatch('medium').targetScore).toBe(3000);
@@ -42,6 +43,7 @@ describe('advanceTurn', () => {
       aiTotalScore: 0,
       activePlayer: 'ai',
       targetScore: 3000,
+      difficulty: 'medium',
       winner: null,
     });
   });
@@ -55,6 +57,7 @@ describe('advanceTurn', () => {
       aiTotalScore: 400,
       activePlayer: 'human',
       targetScore: 3000,
+      difficulty: 'medium',
       winner: null,
     });
   });
@@ -68,6 +71,7 @@ describe('advanceTurn', () => {
       aiTotalScore: 0,
       activePlayer: 'ai',
       targetScore: 3000,
+      difficulty: 'medium',
       winner: null,
     });
   });
