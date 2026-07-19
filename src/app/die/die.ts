@@ -12,6 +12,22 @@ const FACE_ROTATIONS: Record<number, { x: number; y: number }> = {
   4: { x: 90, y: 0 },
 };
 
+// The die-face images live in public/dice/ (runtime static assets), not
+// alongside this component's source, so the url() can't be a static CSS
+// reference: an absolute path ("/dice/...") ignores <base href> entirely and
+// breaks under GitHub Pages' /farkle/ subpath, while a relative CSS path gets
+// resolved by the build as a source-relative file import and fails outright.
+// Binding it from the component instead sidesteps both: the string is built
+// at runtime and resolved by the browser against the document's <base href>.
+const FACE_LAYOUT: { cssClass: string; value: number }[] = [
+  { cssClass: 'face-front', value: 1 },
+  { cssClass: 'face-back', value: 6 },
+  { cssClass: 'face-right', value: 2 },
+  { cssClass: 'face-left', value: 5 },
+  { cssClass: 'face-top', value: 3 },
+  { cssClass: 'face-bottom', value: 4 },
+];
+
 @Component({
   selector: 'app-die',
   imports: [],
@@ -28,11 +44,17 @@ export class Die {
   readonly spin = input(0);
   readonly toggle = output<void>();
 
+  readonly faces = FACE_LAYOUT;
+
   readonly cubeTransform = computed(() => {
     const rotation = FACE_ROTATIONS[this.value()] ?? { x: 0, y: 0 };
     const extraTurns = this.spin() * 360;
     return `rotateX(${rotation.x + extraTurns}deg) rotateY(${rotation.y + extraTurns}deg)`;
   });
+
+  faceImage(value: number): string {
+    return `url(dice/die-${value}.png)`;
+  }
 
   onClick(): void {
     if (this.disabled()) return;

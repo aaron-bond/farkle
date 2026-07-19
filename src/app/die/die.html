@@ -7,11 +7,8 @@
   (click)="onClick()"
 >
   <span class="cube" [style.transform]="cubeTransform()">
-    <span class="face face-front"></span>
-    <span class="face face-back"></span>
-    <span class="face face-right"></span>
-    <span class="face face-left"></span>
-    <span class="face face-top"></span>
-    <span class="face face-bottom"></span>
+    @for (face of faces; track face.cssClass) {
+      <span class="face" [class]="face.cssClass" [style.background-image]="faceImage(face.value)"></span>
+    }
   </span>
 </button>

@@ -232,9 +232,9 @@ To provide native-app sensory integration directly through the browser shell, th
 
 ### **Milestone 4: CSS Aesthetics, Hardware Hooks & AI**
 
-* \[ \] Replace plain numerical buttons with DOM cubes styled with CSS 3D transforms.  
-* \[ \] **TODO (user):** Source/create the six die-face textures (pre-rendered images, one per pip value) to use as the CSS cube face backgrounds \- the realistic ivory/shadowed look from the concept art comes from face textures, not raw CSS-drawn pips. Cube geometry, rotation, and the selected-state glow are still plain CSS.  
-* \[ \] Bind state machine staging variables directly to the animationend lifecycle hooks.  
+* \[x\] Replace plain numerical buttons with DOM cubes styled with CSS 3D transforms.  
+* \[x\] Die-face textures sourced (user-provided pixel art) and wired in as the CSS cube face backgrounds.  
+* \[ \] Bind state machine staging variables directly to the animationend lifecycle hooks \- still using the artificial setTimeout delay from Milestone 3, not real transition-driven gating.  
 * \[ \] Inject hardware API bindings (vibrate, wakeLock) inside corresponding event streams.  
 * \[ \] Write the Heuristic AI Opponent implementation and hook it into the GamePlayer lifecycle interface.
 

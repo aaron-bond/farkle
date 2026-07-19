@@ -40,27 +40,21 @@
 }
 
 .face-front {
-  background-image: url('/dice/die-1.png');
   transform: translateZ(calc(var(--die-size) / 2));
 }
 .face-back {
-  background-image: url('/dice/die-6.png');
   transform: rotateY(180deg) translateZ(calc(var(--die-size) / 2));
 }
 .face-right {
-  background-image: url('/dice/die-2.png');
   transform: rotateY(90deg) translateZ(calc(var(--die-size) / 2));
 }
 .face-left {
-  background-image: url('/dice/die-5.png');
   transform: rotateY(-90deg) translateZ(calc(var(--die-size) / 2));
 }
 .face-top {
-  background-image: url('/dice/die-3.png');
   transform: rotateX(90deg) translateZ(calc(var(--die-size) / 2));
 }
 .face-bottom {
-  background-image: url('/dice/die-4.png');
   transform: rotateX(-90deg) translateZ(calc(var(--die-size) / 2));
 }
 
