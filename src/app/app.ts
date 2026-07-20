@@ -31,6 +31,8 @@ export class App {
   // Dimmed stand-in dice shown before the first roll of a turn, so the board
   // never sits on the old dice-less "Roll 6 dice" button-only screen.
   readonly placeholderDice = computed(() => new Array(this.diceToRoll()).fill(6));
+  // The AI drives its own turn automatically - no action buttons apply to it.
+  readonly isHumanTurn = computed(() => this.activeState()?.activePlayer === 'human');
 
   readonly selectionError = signal<string | null>(null);
   readonly rollGeneration = signal(0);
@@ -77,9 +79,5 @@ export class App {
     if (!accepted) {
       this.selectionError.set('That selection does not score - choose a different combination.');
     }
-  }
-
-  async finishTurn(): Promise<void> {
-    await this.game.finishTurn();
   }
 }

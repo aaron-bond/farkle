@@ -53,7 +53,9 @@
                 <app-die [value]="die" [disabled]="true" [placeholder]="true" />
               }
             </div>
-            <button class="btn btn-primary" (click)="rollDice()" [disabled]="isInputLocked()">Roll</button>
+            @if (isHumanTurn()) {
+              <button class="btn btn-primary" (click)="rollDice()" [disabled]="isInputLocked()">Roll</button>
+            }
           }
           @case ('awaitingSelection') {
             <p class="turn-score">Turn score so far: {{ turnScore() }}</p>
@@ -68,23 +70,23 @@
                 />
               }
             </div>
-            <div class="action-row">
-              <button class="btn btn-primary" (click)="rollAgain()" [disabled]="isInputLocked() || selectedIndices().length === 0">
-                Roll Again
-              </button>
-              <button class="btn" (click)="pass()" [disabled]="isInputLocked()">Pass</button>
-            </div>
-            @if (selectionError()) {
-              <p class="error-text">{{ selectionError() }}</p>
+            @if (isHumanTurn()) {
+              <div class="action-row">
+                <button class="btn btn-primary" (click)="rollAgain()" [disabled]="isInputLocked() || selectedIndices().length === 0">
+                  Roll Again
+                </button>
+                <button class="btn" (click)="pass()" [disabled]="isInputLocked()">Pass</button>
+              </div>
+              @if (selectionError()) {
+                <p class="error-text">{{ selectionError() }}</p>
+              }
             }
           }
           @case ('busted') {
             <p class="result-banner result-bad">Farkle! Turn lost.</p>
-            <button class="btn btn-primary" (click)="finishTurn()" [disabled]="isInputLocked()">Continue</button>
           }
           @case ('banked') {
             <p class="result-banner result-good">Banked {{ turnScore() }} points.</p>
-            <button class="btn btn-primary" (click)="finishTurn()" [disabled]="isInputLocked()">Continue</button>
           }
         }
       }

@@ -87,11 +87,14 @@ describe('GameService', () => {
     const service = configureWithDice([2, 3, 4, 6, 6, 3]);
     service.startGame('medium');
 
-    await Promise.all([service.rollDice(), vi.runAllTimersAsync()]);
-    const match = service.activeState()!;
-    expect(match.turnState).toEqual({ phase: 'busted', turnScore: 0 });
-    expect(match.activePlayer).toBe('human');
-    expect(match.playerTotalScore).toBe(0);
+    const rollPromise = service.rollDice();
+    await vi.advanceTimersByTimeAsync(400); // just the roll itself staging
+    expect(service.activeState()?.turnState).toEqual({ phase: 'busted', turnScore: 0 });
+    expect(service.activeState()?.activePlayer).toBe('human'); // not yet folded/switched
+
+    await vi.runAllTimersAsync();
+    await rollPromise;
+    expect(service.activeState()?.playerTotalScore).toBe(0);
   });
 
   it('rejects an invalid selection without locking input or changing state', async () => {
@@ -132,20 +135,25 @@ describe('GameService', () => {
     // Now sitting on a second roll [6, 5] with 500 already banked-in-progress.
     // Passing with an empty selection should bank exactly that 500, not
     // require engaging with the new roll (which does have a scoring 5 in it).
-    const [accepted] = await Promise.all([service.pass(), vi.runAllTimersAsync()]);
-    expect(accepted).toBe(true);
+    const passPromise = service.pass();
+    await vi.advanceTimersByTimeAsync(400); // just the bank itself staging
     expect(service.activeState()?.turnState).toEqual({ phase: 'banked', turnScore: 500 });
+
+    await vi.runAllTimersAsync();
+    const accepted = await passPromise;
+    expect(accepted).toBe(true);
+    expect(service.activeState()?.playerTotalScore).toBe(500);
   });
 
-  it('finishTurn folds a bust into the next player turn, then the AI plays automatically', async () => {
+  it('busting auto-settles into the next player turn, then the AI plays automatically', async () => {
     const service = configureWithDice([2, 3, 4, 6, 6, 3]);
     service.startGame('medium');
     await Promise.all([service.rollDice(), vi.runAllTimersAsync()]);
-    await Promise.all([service.finishTurn(), vi.runAllTimersAsync()]);
 
-    // Control passes to the AI, which immediately plays its own turn - with
-    // this repeating fake dice sequence it also busts right away, handing
-    // control straight back to the human.
+    // rollDice() already settles the bust automatically (no Continue button
+    // anymore) and control passes to the AI, which immediately plays its own
+    // turn - with this repeating fake dice sequence it also busts right
+    // away, handing control straight back to the human.
     const match = service.activeState()!;
     expect(match.turnState).toEqual({ phase: 'ready', turnScore: 0, diceToRoll: 6, isHotDice: false });
     expect(match.activePlayer).toBe('human');
@@ -153,18 +161,21 @@ describe('GameService', () => {
     expect(match.aiTotalScore).toBe(0);
   });
 
-  it('banking a full straight on easy difficulty reaches the target and declares the winner', async () => {
+  it('a turn-ending result holds on screen for a beat before auto-settling, without needing a Continue click', async () => {
     const service = configureWithDice([1, 2, 3, 4, 5, 6]);
     service.startGame('easy');
-
     await Promise.all([service.rollDice(), vi.runAllTimersAsync()]);
-
     selectDice(service, [0, 1, 2, 3, 4, 5]);
-    const [accepted] = await Promise.all([service.pass(), vi.runAllTimersAsync()]);
-    expect(accepted).toBe(true);
-    expect(service.activeState()?.turnState).toEqual({ phase: 'banked', turnScore: 1500 });
 
-    await Promise.all([service.finishTurn(), vi.runAllTimersAsync()]);
+    const passPromise = service.pass();
+    await vi.advanceTimersByTimeAsync(400); // just the bank itself staging
+    expect(service.activeState()?.turnState).toEqual({ phase: 'banked', turnScore: 1500 });
+    expect(service.activeState()?.winner).toBeNull(); // not yet folded into the match
+
+    await vi.runAllTimersAsync();
+    const accepted = await passPromise;
+
+    expect(accepted).toBe(true);
     const match = service.activeState()!;
     expect(match.winner).toBe('human');
     expect(match.playerTotalScore).toBe(1500);

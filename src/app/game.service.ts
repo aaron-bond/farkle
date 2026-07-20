@@ -24,6 +24,12 @@ const STAGING_DELAY_MS = 400;
 // before anyone can register what happened.
 const AI_THINKING_DELAY_MS = 1000;
 
+// How long a "Farkle! Turn lost." / "Banked X points." result sits on screen
+// before automatically folding into the next turn. There's nothing to decide
+// here - it's just something to read - so this replaces a "Continue" button
+// with a timed auto-advance for both players.
+const RESULT_DISPLAY_MS = 1500;
+
 @Injectable({ providedIn: 'root' })
 export class GameService {
   private readonly random = inject(RANDOM_SOURCE);
@@ -108,6 +114,7 @@ export class GameService {
     if (turnState.phase !== 'ready') return;
 
     await this.performRoll(match, turnState);
+    await this.settleIfTerminal();
   }
 
   // Selecting dice and deciding what to do next is one player action, not two:
@@ -121,7 +128,10 @@ export class GameService {
     if (turnState.phase !== 'awaitingSelection') return false;
 
     const accepted = await this.performSelectionAndRoll(match, turnState, this._selectedIndices());
-    if (accepted) this._selectedIndices.set([]);
+    if (accepted) {
+      this._selectedIndices.set([]);
+      await this.settleIfTerminal();
+    }
     return accepted;
   }
 
@@ -141,33 +151,42 @@ export class GameService {
     if (selectedIndices.length === 0) {
       await this.stageTurnState(match, { phase: 'banked', turnScore: turnState.turnScore });
       this._selectedIndices.set([]);
+      await this.settleIfTerminal();
       return true;
     }
 
     const accepted = await this.performSelectionAndBank(match, turnState, selectedIndices);
-    if (accepted) this._selectedIndices.set([]);
+    if (accepted) {
+      this._selectedIndices.set([]);
+      await this.settleIfTerminal();
+    }
     return accepted;
   }
 
   // The turn's own result (rolled dice, "Farkle!", "Banked 550") is staged and
-  // promoted first via stageTurnState, so the player sees it. Only a separate
-  // explicit finishTurn() call folds a busted/banked turn into the next player's
-  // turn via advanceTurn - keeping the two visually distinct staged transitions.
-  async finishTurn(): Promise<void> {
+  // promoted first via stageTurnState, so the player sees it. Once a turn
+  // lands on 'busted'/'banked', there's nothing left to decide - just
+  // something to read - so this holds the result on screen for a beat, then
+  // automatically folds it into the next turn via advanceTurn. No "Continue"
+  // button, for either player: this is called after every human action above
+  // and from playAiTurn's tail below, so both paths settle the same way.
+  private async settleIfTerminal(): Promise<void> {
     const match = this._activeState();
-    if (!match || this._isInputLocked()) return;
+    if (!match) return;
     if (match.turnState.phase !== 'busted' && match.turnState.phase !== 'banked') return;
 
+    this._isInputLocked.set(true);
+    await this.wait(RESULT_DISPLAY_MS);
     await this.performFinishTurn(match);
   }
 
   // Drives a full AI turn autonomously: roll, take every scoring die (revealed
   // one at a time, pausing between each so the selection is visible), decide
   // bank-vs-continue via the personality heuristic, repeat until it busts or
-  // banks, then fold the result into the next turn exactly like a human's
-  // finishTurn() would. Each step still goes through the same staging gate
-  // (stageTurnState/performFinishTurn), so the AI's turn paces itself
-  // identically to a human one instead of resolving instantly.
+  // banks, then fold the result into the next turn via settleIfTerminal() -
+  // the same path a human's own turn-ending action uses. Each step still goes
+  // through the same staging gate (stageTurnState), so the AI's turn paces
+  // itself identically to a human one instead of resolving instantly.
   private async playAiTurn(): Promise<void> {
     let match = this._activeState();
     if (!match || match.winner || match.activePlayer !== 'ai') return;
@@ -203,17 +222,7 @@ export class GameService {
       match = this._activeState()!;
     }
 
-    // Give the human a moment to actually read the bust/bank outcome before
-    // it auto-continues - otherwise "Farkle!"/"Banked X" can flash by within
-    // a single staging delay. Re-lock explicitly since the staged bust/bank
-    // just unlocked input at its own promotion (matching the human-driven
-    // busted/banked flow, where the player controls the pace via Continue) -
-    // without this, a human could click Continue during this pause and
-    // short-circuit it, since finishTurn() doesn't gate on whose turn it is.
-    this._isInputLocked.set(true);
-    await this.wait(AI_THINKING_DELAY_MS);
-
-    await this.performFinishTurn(match);
+    await this.settleIfTerminal();
   }
 
   // Ticks the AI's selection up one die at a time, pausing before the first
