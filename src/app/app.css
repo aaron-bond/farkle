@@ -1,23 +1,48 @@
+/*
+ * Wood-grain background: a real tiled texture (public/Wood_Surface-base.png),
+ * repeating at a fixed tile size. background-image itself is bound from the
+ * component (see app.ts) rather than set here as a url() - everything else
+ * (repeat, tile size, fallback color) stays in CSS as usual.
+ */
 :host {
   display: block;
   min-height: 100vh;
-  background: #f0f0f0;
+  background-color: #7a5233;
+  background-repeat: repeat;
+  background-size: 512px 512px;
   padding: 24px 16px;
   box-sizing: border-box;
   font-family: system-ui, sans-serif;
 }
 
+/*
+ * Glassmorphism palette, shared by .page and .modal-card: a dark, translucent,
+ * blurred panel that lets the wood grain show through instead of hiding it
+ * behind an opaque card. Gold is the shared accent for anything emphasized
+ * (headings' underline, scores) - both colors pulled from the user's mockup.
+ */
+.page,
+.modal-card {
+  background: rgba(28, 22, 16, 0.6);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 12px;
+  padding: 24px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.45);
+  color: #f5f5f0;
+}
+
 .page {
   max-width: 420px;
   margin: 0 auto;
-  background: #fff;
-  border-radius: 8px;
-  padding: 24px;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
 }
 
-.page h1 {
+.page h1,
+.modal-card h2 {
   margin-top: 0;
+  padding-bottom: 12px;
+  border-bottom: 2px solid #e3b23c;
   text-align: center;
 }
 
@@ -27,22 +52,26 @@
   width: 100%;
   padding: 10px;
   margin-top: 8px;
-  border-radius: 4px;
-  border: 1px solid #ccc;
-  background: #f5f5f5;
+  border-radius: 6px;
+  border: 1px solid #4fc3f7;
+  background: rgba(79, 195, 247, 0.08);
+  color: #eaf6fd;
   font-size: 1rem;
   cursor: pointer;
+  box-shadow: 0 0 10px rgba(79, 195, 247, 0.35);
 }
 
 .btn:disabled {
-  opacity: 0.5;
+  opacity: 0.4;
   cursor: default;
+  box-shadow: none;
 }
 
 .btn-primary {
-  background: #2e7d32;
+  background: #3f8f46;
   color: #fff;
-  border: none;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
 }
 
 .stacked-actions {
@@ -53,26 +82,30 @@
 .score-banner {
   display: flex;
   justify-content: space-between;
-  background: #fafafa;
-  border: 1px solid #eee;
-  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 6px;
   padding: 8px 12px;
   margin-bottom: 12px;
   font-size: 0.9rem;
+  color: #e3b23c;
+  font-weight: 600;
 }
 
 .turn-indicator {
   font-weight: bold;
   margin-bottom: 8px;
+  color: #f5f5f0;
 }
 
 .turn-score {
-  color: #555;
+  color: #cfcfcf;
 }
 
 .dice-row {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(3, auto);
+  justify-content: center;
 }
 
 .action-row {
@@ -91,15 +124,15 @@
 }
 
 .result-good {
-  color: #2e7d32;
+  color: #66bb6a;
 }
 
 .result-bad {
-  color: #c62828;
+  color: #ef5350;
 }
 
 .error-text {
-  color: #c62828;
+  color: #ff6659;
   font-size: 0.9rem;
 }
 
@@ -114,16 +147,8 @@
 }
 
 .modal-card {
-  background: #fff;
-  border-radius: 8px;
-  padding: 24px;
   max-width: 360px;
   width: 100%;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
-}
-
-.modal-card h2 {
-  margin-top: 0;
 }
 
 .score-summary {
@@ -134,13 +159,18 @@
   display: flex;
   justify-content: space-between;
   padding: 6px 0;
-  border-bottom: 1px solid #eee;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
 }
 
 .score-row dt {
-  font-weight: bold;
+  font-weight: 700;
+  text-transform: uppercase;
+  font-size: 0.85rem;
+  color: #e3b23c;
 }
 
 .score-row dd {
   margin: 0;
+  color: #f5d98a;
+  font-weight: 600;
 }

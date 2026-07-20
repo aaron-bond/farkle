@@ -23,13 +23,30 @@
   pointer-events: none;
 }
 
+/*
+ * The die-face images only contain the pips now (see public/dice/) - the
+ * square itself, its border, and its corner-cutout bevel used to be baked
+ * into the pixel art, but that meant a chunk of each 22x22 image was just
+ * transparent margin. That was invisible against the old plain white page,
+ * but once the app moved to a busy wood/glass background, the transparent
+ * margin (and its blocky, non-antialiased corner cutouts) started showing
+ * through as a visible mismatch. Recreating the square face in CSS instead
+ * (background-color/border/border-radius here) means it always matches
+ * whatever's actually behind the die, and the corners are genuinely smooth
+ * rather than a fixed pixel-art cutout. Border color is lifted from the
+ * original art's palette (#2b3b3d); fill is a custom warm ivory instead of
+ * the original art's cool gray, to sit better against the wood background.
+ */
 .face {
   position: absolute;
   inset: 0;
   width: var(--die-size);
   height: var(--die-size);
   box-sizing: border-box;
-  border-radius: 6px;
+  background-color: #eae2c5;
+  border: 2px solid #2b3b3d;
+  border-radius: 8px;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.6);
   background-size: 80%;
   background-position: center;
   background-repeat: no-repeat;

@@ -8,9 +8,20 @@ import { GameService } from './game.service.js';
   imports: [Die],
   templateUrl: './app.html',
   styleUrl: './app.css',
+  host: {
+    // Bound from the component rather than a static CSS url(), same reason
+    // as the die faces (see die.ts): this is a component stylesheet, so a
+    // relative url() in app.css gets resolved by the build as a source-
+    // relative file import and fails, while an absolute one ("/Wood_...")
+    // would ignore <base href> and break under GitHub Pages' /farkle/
+    // subpath. A runtime-constructed relative string sidesteps both.
+    '[style.background-image]': 'backgroundImageUrl',
+  },
 })
 export class App {
   private readonly game = inject(GameService);
+
+  readonly backgroundImageUrl = "url('Wood_Surface-base.png')";
 
   readonly activeState = this.game.activeState;
   readonly isInputLocked = this.game.isInputLocked;

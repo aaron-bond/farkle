@@ -73,9 +73,11 @@
             @if (isHumanTurn()) {
               <div class="action-row">
                 <button class="btn btn-primary" (click)="rollAgain()" [disabled]="isInputLocked() || selectedIndices().length === 0">
-                  Roll Again
+                  {{ selectedIndices().length > 0 ? 'Score & Roll Again' : 'Roll Again' }}
                 </button>
-                <button class="btn" (click)="pass()" [disabled]="isInputLocked()">Pass</button>
+                <button class="btn" (click)="pass()" [disabled]="isInputLocked()">
+                  {{ selectedIndices().length > 0 ? 'Score & Pass' : 'Pass' }}
+                </button>
               </div>
               @if (selectionError()) {
                 <p class="error-text">{{ selectionError() }}</p>
