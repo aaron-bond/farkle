@@ -61,3 +61,12 @@
 .die.selected .face {
   filter: drop-shadow(0 0 4px gold);
 }
+
+.die.placeholder {
+  cursor: default;
+}
+
+.die.placeholder .face {
+  opacity: 0.35;
+  filter: grayscale(70%);
+}

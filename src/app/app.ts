@@ -28,6 +28,9 @@ export class App {
     const t = this.turnState();
     return t?.phase === 'awaitingSelection' ? t.rolledDice : [];
   });
+  // Dimmed stand-in dice shown before the first roll of a turn, so the board
+  // never sits on the old dice-less "Roll 6 dice" button-only screen.
+  readonly placeholderDice = computed(() => new Array(this.diceToRoll()).fill(6));
 
   readonly selectionError = signal<string | null>(null);
   readonly rollGeneration = signal(0);

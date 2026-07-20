@@ -38,6 +38,10 @@ export class Die {
   readonly value = input.required<number>();
   readonly selected = input(false);
   readonly disabled = input(false);
+  // Shown before the first roll of a turn, sitting in place of the old
+  // dice-less "Roll 6 dice" button-only screen. Always non-interactive -
+  // there's nothing real to select yet.
+  readonly placeholder = input(false);
   // Bumped by the parent on every roll, even when the resulting value repeats,
   // so the cube always visibly spins a full extra turn instead of sitting
   // still whenever a re-roll happens to land on the same face as before.

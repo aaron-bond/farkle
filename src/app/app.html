@@ -48,9 +48,12 @@
 
         @switch (phase()) {
           @case ('ready') {
-            <button class="btn btn-primary" (click)="rollDice()" [disabled]="isInputLocked()">
-              Roll {{ diceToRoll() }} dice
-            </button>
+            <div class="dice-row">
+              @for (die of placeholderDice(); track $index) {
+                <app-die [value]="die" [disabled]="true" [placeholder]="true" />
+              }
+            </div>
+            <button class="btn btn-primary" (click)="rollDice()" [disabled]="isInputLocked()">Roll</button>
           }
           @case ('awaitingSelection') {
             <p class="turn-score">Turn score so far: {{ turnScore() }}</p>

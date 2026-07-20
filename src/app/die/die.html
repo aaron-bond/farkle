@@ -2,6 +2,7 @@
   type="button"
   class="die"
   [class.selected]="selected()"
+  [class.placeholder]="placeholder()"
   [disabled]="disabled()"
   [attr.aria-pressed]="selected()"
   (click)="onClick()"
