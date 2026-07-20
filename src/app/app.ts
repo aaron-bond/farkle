@@ -15,6 +15,7 @@ export class App {
   readonly activeState = this.game.activeState;
   readonly isInputLocked = this.game.isInputLocked;
   readonly selectedIndices = this.game.selectedIndices;
+  readonly pendingResume = this.game.pendingResume;
 
   readonly turnState = computed(() => this.activeState()?.turnState ?? null);
   readonly phase = computed(() => this.turnState()?.phase ?? null);
@@ -33,6 +34,14 @@ export class App {
 
   startGame(difficulty: Difficulty): void {
     this.game.startGame(difficulty);
+  }
+
+  resumeSavedGame(): void {
+    this.game.resumeSavedGame();
+  }
+
+  discardSavedGame(): void {
+    this.game.discardSavedGame();
   }
 
   resetGame(): void {

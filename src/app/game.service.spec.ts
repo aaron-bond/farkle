@@ -1,6 +1,8 @@
 import { TestBed } from '@angular/core/testing';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { GameService, RANDOM_SOURCE } from './game.service.js';
+import type { MatchState } from '../core/match.js';
+import type { StorageAccessProvider } from '../core/storage.js';
+import { GameService, RANDOM_SOURCE, STORAGE_PROVIDER } from './game.service.js';
 
 function fakeRandomForDiceSequence(values: number[]): () => number {
   const floats = values.map((v) => (v - 1) / 6 + 1 / 12);
@@ -8,9 +10,32 @@ function fakeRandomForDiceSequence(values: number[]): () => number {
   return () => floats[i++ % floats.length]!;
 }
 
-function configureWithDice(values: number[]): GameService {
+class FakeGameStorage implements StorageAccessProvider {
+  saved: MatchState | null;
+
+  constructor(initial: MatchState | null = null) {
+    this.saved = initial;
+  }
+
+  async saveGameState(state: MatchState): Promise<void> {
+    this.saved = state;
+  }
+
+  async loadGameState(): Promise<MatchState | null> {
+    return this.saved;
+  }
+
+  async clearSession(): Promise<void> {
+    this.saved = null;
+  }
+}
+
+function configureWithDice(values: number[], storage: StorageAccessProvider = new FakeGameStorage()): GameService {
   TestBed.configureTestingModule({
-    providers: [{ provide: RANDOM_SOURCE, useValue: fakeRandomForDiceSequence(values) }],
+    providers: [
+      { provide: RANDOM_SOURCE, useValue: fakeRandomForDiceSequence(values) },
+      { provide: STORAGE_PROVIDER, useValue: storage },
+    ],
   });
   return TestBed.inject(GameService);
 }
@@ -180,5 +205,118 @@ describe('GameService', () => {
 
     await vi.runAllTimersAsync(); // final observe pause, then submit and play out the rest of the turn
     expect(service.selectedIndices()).toEqual([]); // cleared once submitted
+  });
+
+  describe('persistence', () => {
+    it('persists the game state after starting a game and after each committed turn transition', async () => {
+      const storage = new FakeGameStorage();
+      const service = configureWithDice([1, 2, 3, 4, 4, 4], storage);
+
+      service.startGame('medium');
+      expect(storage.saved).toEqual(service.activeState());
+
+      await Promise.all([service.rollDice(), vi.runAllTimersAsync()]);
+      expect(storage.saved).toEqual(service.activeState());
+    });
+
+    it('offers a saved game as a pending resume on construction, without applying it yet', async () => {
+      const saved: MatchState = {
+        turnState: { phase: 'ready', turnScore: 300, diceToRoll: 4, isHotDice: false },
+        playerTotalScore: 800,
+        aiTotalScore: 200,
+        activePlayer: 'human',
+        targetScore: 3000,
+        difficulty: 'medium',
+        winner: null,
+      };
+      const service = configureWithDice([1, 1, 1, 1, 1, 1], new FakeGameStorage(saved));
+
+      await vi.advanceTimersByTimeAsync(0); // flush the constructor's fire-and-forget restore
+
+      expect(service.pendingResume()).toEqual(saved);
+      expect(service.activeState()).toBeNull();
+    });
+
+    it('does not offer anything to resume when no game was saved', async () => {
+      const service = configureWithDice([1, 1, 1, 1, 1, 1], new FakeGameStorage(null));
+      await vi.advanceTimersByTimeAsync(0);
+      expect(service.pendingResume()).toBeNull();
+      expect(service.activeState()).toBeNull();
+    });
+
+    it('discards a saved match that already has a winner rather than offering to resume it', async () => {
+      const finished: MatchState = {
+        turnState: { phase: 'banked', turnScore: 200 },
+        playerTotalScore: 1600,
+        aiTotalScore: 900,
+        activePlayer: 'human',
+        targetScore: 1500,
+        difficulty: 'easy',
+        winner: 'human',
+      };
+      const storage = new FakeGameStorage(finished);
+      const service = configureWithDice([1, 1, 1, 1, 1, 1], storage);
+
+      await vi.advanceTimersByTimeAsync(0);
+
+      expect(service.pendingResume()).toBeNull();
+      expect(storage.saved).toBeNull();
+    });
+
+    it('resumeSavedGame applies the pending state and resumes an AI turn if that was mid-flight', async () => {
+      const saved: MatchState = {
+        turnState: { phase: 'ready', turnScore: 0, diceToRoll: 6, isHotDice: false },
+        playerTotalScore: 0,
+        aiTotalScore: 0,
+        activePlayer: 'ai',
+        targetScore: 1500,
+        difficulty: 'easy',
+        winner: null,
+      };
+      const service = configureWithDice([1, 2, 3, 4, 5, 6], new FakeGameStorage(saved));
+      await vi.advanceTimersByTimeAsync(0);
+
+      service.resumeSavedGame();
+      expect(service.pendingResume()).toBeNull();
+
+      await vi.runAllTimersAsync();
+
+      const match = service.activeState()!;
+      expect(match.winner).toBe('ai');
+      expect(match.aiTotalScore).toBe(1500);
+    });
+
+    it('discardSavedGame clears the pending offer and the persisted session, without touching activeState', async () => {
+      const saved: MatchState = {
+        turnState: { phase: 'ready', turnScore: 0, diceToRoll: 6, isHotDice: false },
+        playerTotalScore: 400,
+        aiTotalScore: 100,
+        activePlayer: 'human',
+        targetScore: 3000,
+        difficulty: 'medium',
+        winner: null,
+      };
+      const storage = new FakeGameStorage(saved);
+      const service = configureWithDice([1, 1, 1, 1, 1, 1], storage);
+      await vi.advanceTimersByTimeAsync(0);
+      expect(service.pendingResume()).toEqual(saved);
+
+      service.discardSavedGame();
+
+      expect(service.pendingResume()).toBeNull();
+      expect(service.activeState()).toBeNull();
+      expect(storage.saved).toBeNull();
+    });
+
+    it('resetGame clears the persisted session', async () => {
+      const storage = new FakeGameStorage();
+      const service = configureWithDice([1, 1, 1, 1, 1, 1], storage);
+      service.startGame('easy');
+      expect(storage.saved).not.toBeNull();
+
+      service.resetGame();
+      await vi.advanceTimersByTimeAsync(0);
+      expect(storage.saved).toBeNull();
+    });
   });
 });

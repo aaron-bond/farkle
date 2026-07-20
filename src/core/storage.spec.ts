@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { createLocalStorageProvider, STORAGE_KEY, type SerializableGameState } from './storage.js';
+import type { MatchState } from './match.js';
+import { createLocalStorageProvider, STORAGE_KEY } from './storage.js';
 
 class FakeStorage implements Storage {
   private data = new Map<string, string>();
@@ -29,12 +30,14 @@ class FakeStorage implements Storage {
   }
 }
 
-const sampleState: SerializableGameState = {
+const sampleState: MatchState = {
   turnState: { phase: 'ready', turnScore: 550, diceToRoll: 4, isHotDice: false },
   playerTotalScore: 1200,
   aiTotalScore: 800,
   activePlayer: 'human',
   targetScore: 3000,
+  difficulty: 'medium',
+  winner: null,
 };
 
 describe('createLocalStorageProvider', () => {

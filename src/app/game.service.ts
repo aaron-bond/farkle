@@ -3,10 +3,15 @@ import { findAutoScoringSelection } from '../core/scoringEngine.js';
 import { shouldAiContinue } from '../core/aiPlayer.js';
 import { rollDice } from '../core/dice.js';
 import { advanceTurn, startMatch, type Difficulty, type MatchState, type PlayerId } from '../core/match.js';
+import { createLocalStorageProvider, type StorageAccessProvider } from '../core/storage.js';
 import { bank, roll, selectDice, type TurnState } from '../core/turnEngine.js';
 
 export const RANDOM_SOURCE = new InjectionToken<() => number>('RANDOM_SOURCE', {
   factory: () => Math.random,
+});
+
+export const STORAGE_PROVIDER = new InjectionToken<StorageAccessProvider>('STORAGE_PROVIDER', {
+  factory: () => createLocalStorageProvider(),
 });
 
 // Placeholder for the Staging Gate's animation-driven delay (Section 2.2).
@@ -22,18 +27,61 @@ const AI_THINKING_DELAY_MS = 1000;
 @Injectable({ providedIn: 'root' })
 export class GameService {
   private readonly random = inject(RANDOM_SOURCE);
+  private readonly storage = inject(STORAGE_PROVIDER);
 
   private readonly _activeState = signal<MatchState | null>(null);
   private readonly _isInputLocked = signal(false);
   private readonly _selectedIndices = signal<number[]>([]);
+  private readonly _pendingResume = signal<MatchState | null>(null);
 
   readonly activeState = this._activeState.asReadonly();
   readonly isInputLocked = this._isInputLocked.asReadonly();
   readonly selectedIndices = this._selectedIndices.asReadonly();
+  readonly pendingResume = this._pendingResume.asReadonly();
+
+  constructor() {
+    void this.restoreSession();
+  }
+
+  // Loads a game left mid-turn (including mid-AI-turn) after a reload, but
+  // holds it as a pending offer rather than applying it immediately - the
+  // player confirms via resumeSavedGame()/discardSavedGame() (the "Continue
+  // Saved Game?" prompt) before it becomes the live active state. Since only
+  // committed ActiveState is ever persisted (Section 2.3), there's no
+  // separate StagingState to worry about resuming into.
+  private async restoreSession(): Promise<void> {
+    const saved = await this.storage.loadGameState();
+    if (!saved || this._activeState() || this._pendingResume()) return;
+
+    if (saved.winner) {
+      // A finished match isn't something to offer resuming - nothing left to play.
+      void this.storage.clearSession();
+      return;
+    }
+
+    this._pendingResume.set(saved);
+  }
+
+  resumeSavedGame(): void {
+    const saved = this._pendingResume();
+    if (!saved) return;
+
+    this._pendingResume.set(null);
+    this._activeState.set(saved);
+    if (saved.activePlayer === 'ai') {
+      void this.playAiTurn();
+    }
+  }
+
+  discardSavedGame(): void {
+    this._pendingResume.set(null);
+    void this.storage.clearSession();
+  }
 
   startGame(difficulty: Difficulty, startingPlayer: PlayerId = 'human'): void {
     const match = startMatch(difficulty, startingPlayer);
     this._activeState.set(match);
+    this.persist();
     if (match.activePlayer === 'ai') {
       void this.playAiTurn();
     }
@@ -42,6 +90,7 @@ export class GameService {
   resetGame(): void {
     this._activeState.set(null);
     this._selectedIndices.set([]);
+    void this.storage.clearSession();
   }
 
   toggleDieSelection(index: number): void {
@@ -207,6 +256,7 @@ export class GameService {
     await this.wait(STAGING_DELAY_MS);
     const next = advanceTurn(match, match.turnState);
     this._activeState.set(next);
+    this.persist();
     this._isInputLocked.set(false);
 
     if (next.activePlayer === 'ai' && !next.winner) {
@@ -218,7 +268,16 @@ export class GameService {
     this._isInputLocked.set(true);
     await this.wait(STAGING_DELAY_MS);
     this._activeState.set({ ...match, turnState: nextTurnState });
+    this.persist();
     this._isInputLocked.set(false);
+  }
+
+  // Only ever called right after a committed ActiveState promotion (Section
+  // 2.3) - never mid-animation, since there is no separate StagingState
+  // object here to accidentally persist.
+  private persist(): void {
+    const match = this._activeState();
+    if (match) void this.storage.saveGameState(match);
   }
 
   private wait(ms: number): Promise<void> {

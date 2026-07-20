@@ -1,54 +1,90 @@
-<h1>Farkle</h1>
-
-@if (!activeState()) {
-  <button (click)="startGame('easy')">Easy (1500)</button>
-  <button (click)="startGame('medium')">Medium (3000)</button>
-  <button (click)="startGame('hard')">Hard (5000)</button>
-} @else {
-  <p>
-    You: {{ activeState()!.playerTotalScore }} | AI: {{ activeState()!.aiTotalScore }} | Target:
-    {{ activeState()!.targetScore }}
-  </p>
-
-  @if (activeState()!.winner; as winner) {
-    <p>{{ winner === 'human' ? 'You win!' : 'AI wins!' }}</p>
-    <button (click)="resetGame()">Play again</button>
-  } @else {
-    <p>{{ activeState()!.activePlayer === 'human' ? "Your turn" : "AI's turn" }}</p>
-
-    @switch (phase()) {
-      @case ('ready') {
-        <button (click)="rollDice()" [disabled]="isInputLocked()">Roll {{ diceToRoll() }} dice</button>
-      }
-      @case ('awaitingSelection') {
-        <p>Turn score so far: {{ turnScore() }}</p>
-        <div class="dice-row">
-          @for (die of rolledDice(); track $index) {
-            <app-die
-              [value]="die"
-              [selected]="selectedIndices().includes($index)"
-              [disabled]="isInputLocked()"
-              [spin]="rollGeneration()"
-              (toggle)="toggleDieSelection($index)"
-            />
-          }
+@if (pendingResume(); as pending) {
+  <div class="modal-backdrop">
+    <div class="modal-card">
+      <h2>Continue Saved Game?</h2>
+      <p>We found a previous game in progress. Would you like to resume? Here are the current scores:</p>
+      <dl class="score-summary">
+        <div class="score-row">
+          <dt>You</dt>
+          <dd>{{ pending.playerTotalScore }} banked</dd>
         </div>
-        <button (click)="rollAgain()" [disabled]="isInputLocked() || selectedIndices().length === 0">
-          Roll Again
-        </button>
-        <button (click)="pass()" [disabled]="isInputLocked()">Pass</button>
-        @if (selectionError()) {
-          <p>{{ selectionError() }}</p>
+        <div class="score-row">
+          <dt>Opponent</dt>
+          <dd>{{ pending.aiTotalScore }} banked</dd>
+        </div>
+        <div class="score-row">
+          <dt>Current turn ({{ pending.activePlayer === 'human' ? 'you' : 'AI' }})</dt>
+          <dd>{{ pending.turnState.turnScore }} unbanked</dd>
+        </div>
+      </dl>
+      <button class="btn btn-primary" (click)="resumeSavedGame()">Continue Saved Game</button>
+      <button class="btn" (click)="discardSavedGame()">Start New Game</button>
+    </div>
+  </div>
+} @else {
+  <div class="page">
+    <h1>Farkle</h1>
+
+    @if (!activeState()) {
+      <div class="stacked-actions">
+        <button class="btn" (click)="startGame('easy')">Easy (1500)</button>
+        <button class="btn" (click)="startGame('medium')">Medium (3000)</button>
+        <button class="btn" (click)="startGame('hard')">Hard (5000)</button>
+      </div>
+    } @else {
+      <div class="score-banner">
+        <span>You: {{ activeState()!.playerTotalScore }}</span>
+        <span>AI: {{ activeState()!.aiTotalScore }}</span>
+        <span>Target: {{ activeState()!.targetScore }}</span>
+      </div>
+
+      @if (activeState()!.winner; as winner) {
+        <p class="result-banner" [class.result-good]="winner === 'human'" [class.result-bad]="winner !== 'human'">
+          {{ winner === 'human' ? 'You win!' : 'AI wins!' }}
+        </p>
+        <button class="btn btn-primary" (click)="resetGame()">Play again</button>
+      } @else {
+        <p class="turn-indicator">{{ activeState()!.activePlayer === 'human' ? "Your turn" : "AI's turn" }}</p>
+
+        @switch (phase()) {
+          @case ('ready') {
+            <button class="btn btn-primary" (click)="rollDice()" [disabled]="isInputLocked()">
+              Roll {{ diceToRoll() }} dice
+            </button>
+          }
+          @case ('awaitingSelection') {
+            <p class="turn-score">Turn score so far: {{ turnScore() }}</p>
+            <div class="dice-row">
+              @for (die of rolledDice(); track $index) {
+                <app-die
+                  [value]="die"
+                  [selected]="selectedIndices().includes($index)"
+                  [disabled]="isInputLocked()"
+                  [spin]="rollGeneration()"
+                  (toggle)="toggleDieSelection($index)"
+                />
+              }
+            </div>
+            <div class="action-row">
+              <button class="btn btn-primary" (click)="rollAgain()" [disabled]="isInputLocked() || selectedIndices().length === 0">
+                Roll Again
+              </button>
+              <button class="btn" (click)="pass()" [disabled]="isInputLocked()">Pass</button>
+            </div>
+            @if (selectionError()) {
+              <p class="error-text">{{ selectionError() }}</p>
+            }
+          }
+          @case ('busted') {
+            <p class="result-banner result-bad">Farkle! Turn lost.</p>
+            <button class="btn btn-primary" (click)="finishTurn()" [disabled]="isInputLocked()">Continue</button>
+          }
+          @case ('banked') {
+            <p class="result-banner result-good">Banked {{ turnScore() }} points.</p>
+            <button class="btn btn-primary" (click)="finishTurn()" [disabled]="isInputLocked()">Continue</button>
+          }
         }
       }
-      @case ('busted') {
-        <p>Farkle! Turn lost.</p>
-        <button (click)="finishTurn()" [disabled]="isInputLocked()">Continue</button>
-      }
-      @case ('banked') {
-        <p>Banked {{ turnScore() }} points.</p>
-        <button (click)="finishTurn()" [disabled]="isInputLocked()">Continue</button>
-      }
     }
-  }
+  </div>
 }

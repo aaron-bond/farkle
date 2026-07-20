@@ -1,16 +1,8 @@
-import type { TurnState } from './turnEngine.js';
-
-export interface SerializableGameState {
-  turnState: TurnState;
-  playerTotalScore: number;
-  aiTotalScore: number;
-  activePlayer: 'human' | 'ai';
-  targetScore: number;
-}
+import type { MatchState } from './match.js';
 
 export interface StorageAccessProvider {
-  saveGameState(state: SerializableGameState): Promise<void>;
-  loadGameState(): Promise<SerializableGameState | null>;
+  saveGameState(state: MatchState): Promise<void>;
+  loadGameState(): Promise<MatchState | null>;
   clearSession(): Promise<void>;
 }
 
@@ -26,7 +18,7 @@ export function createLocalStorageProvider(storage: Storage = localStorage): Sto
       const raw = storage.getItem(STORAGE_KEY);
       if (raw === null) return null;
       try {
-        return JSON.parse(raw) as SerializableGameState;
+        return JSON.parse(raw) as MatchState;
       } catch {
         return null;
       }
