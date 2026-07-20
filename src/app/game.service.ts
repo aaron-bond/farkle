@@ -203,6 +203,16 @@ export class GameService {
       match = this._activeState()!;
     }
 
+    // Give the human a moment to actually read the bust/bank outcome before
+    // it auto-continues - otherwise "Farkle!"/"Banked X" can flash by within
+    // a single staging delay. Re-lock explicitly since the staged bust/bank
+    // just unlocked input at its own promotion (matching the human-driven
+    // busted/banked flow, where the player controls the pace via Continue) -
+    // without this, a human could click Continue during this pause and
+    // short-circuit it, since finishTurn() doesn't gate on whose turn it is.
+    this._isInputLocked.set(true);
+    await this.wait(AI_THINKING_DELAY_MS);
+
     await this.performFinishTurn(match);
   }
 
