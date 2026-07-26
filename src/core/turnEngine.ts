@@ -3,7 +3,7 @@ import { evaluateSelection, hasAnyScore } from './scoringEngine.js';
 export type TurnState =
   | { phase: 'ready'; turnScore: number; diceToRoll: number; isHotDice: boolean }
   | { phase: 'awaitingSelection'; turnScore: number; rolledDice: number[] }
-  | { phase: 'busted'; turnScore: 0 }
+  | { phase: 'busted'; turnScore: 0; rolledDice: number[] }
   | { phase: 'banked'; turnScore: number };
 
 export function startTurn(): Extract<TurnState, { phase: 'ready' }> {
@@ -15,7 +15,7 @@ export function roll(
   rolledDice: number[],
 ): TurnState {
   if (!hasAnyScore(rolledDice)) {
-    return { phase: 'busted', turnScore: 0 };
+    return { phase: 'busted', turnScore: 0, rolledDice };
   }
   return { phase: 'awaitingSelection', turnScore: state.turnScore, rolledDice };
 }

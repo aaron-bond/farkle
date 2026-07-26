@@ -89,7 +89,11 @@ describe('GameService', () => {
 
     const rollPromise = service.rollDice();
     await vi.advanceTimersByTimeAsync(400); // just the roll itself staging
-    expect(service.activeState()?.turnState).toEqual({ phase: 'busted', turnScore: 0 });
+    expect(service.activeState()?.turnState).toEqual({
+      phase: 'busted',
+      turnScore: 0,
+      rolledDice: [2, 3, 4, 6, 6, 3],
+    });
     expect(service.activeState()?.activePlayer).toBe('human'); // not yet folded/switched
 
     await vi.runAllTimersAsync();
@@ -216,6 +220,34 @@ describe('GameService', () => {
 
     await vi.runAllTimersAsync(); // final observe pause, then submit and play out the rest of the turn
     expect(service.selectedIndices()).toEqual([]); // cleared once submitted
+  });
+
+  it('bumps rollGeneration on the AI\'s own rolls too, not just the human\'s', async () => {
+    // rollGeneration drives the guaranteed dice-spin-into-place animation; it
+    // has to fire for AI rolls as well, since the AI never goes through the
+    // human-facing rollDice()/rollAgain() methods.
+    const service = configureWithDice([2, 3, 4, 6, 6, 3]);
+    service.startGame('medium', 'ai');
+
+    expect(service.rollGeneration()).toBe(0);
+    await vi.runAllTimersAsync();
+    expect(service.rollGeneration()).toBeGreaterThan(0);
+  });
+
+  it('a bust preserves the dice that caused it, so the player can see why', async () => {
+    const service = configureWithDice([2, 3, 4, 6, 6, 3]);
+    service.startGame('medium');
+
+    const rollPromise = service.rollDice();
+    await vi.advanceTimersByTimeAsync(400);
+    expect(service.activeState()?.turnState).toEqual({
+      phase: 'busted',
+      turnScore: 0,
+      rolledDice: [2, 3, 4, 6, 6, 3],
+    });
+
+    await vi.runAllTimersAsync();
+    await rollPromise;
   });
 
   describe('persistence', () => {

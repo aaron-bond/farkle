@@ -27,6 +27,7 @@ export class App {
   readonly isInputLocked = this.game.isInputLocked;
   readonly selectedIndices = this.game.selectedIndices;
   readonly pendingResume = this.game.pendingResume;
+  readonly rollGeneration = this.game.rollGeneration;
 
   readonly turnState = computed(() => this.activeState()?.turnState ?? null);
   readonly phase = computed(() => this.turnState()?.phase ?? null);
@@ -35,9 +36,12 @@ export class App {
     const t = this.turnState();
     return t?.phase === 'ready' ? t.diceToRoll : 0;
   });
+  // Covers both the interactive selection screen and the busted display below -
+  // a bust still carries the dice that caused it, so the player can see why.
   readonly rolledDice = computed(() => {
     const t = this.turnState();
-    return t?.phase === 'awaitingSelection' ? t.rolledDice : [];
+    if (t?.phase === 'awaitingSelection' || t?.phase === 'busted') return t.rolledDice;
+    return [];
   });
   // Dimmed stand-in dice shown before the first roll of a turn, so the board
   // never sits on the old dice-less "Roll 6 dice" button-only screen.
@@ -46,7 +50,6 @@ export class App {
   readonly isHumanTurn = computed(() => this.activeState()?.activePlayer === 'human');
 
   readonly selectionError = signal<string | null>(null);
-  readonly rollGeneration = signal(0);
 
   startGame(difficulty: Difficulty): void {
     this.game.startGame(difficulty);
@@ -71,7 +74,6 @@ export class App {
 
   async rollDice(): Promise<void> {
     await this.game.rollDice();
-    this.rollGeneration.update((n) => n + 1);
   }
 
   async rollAgain(): Promise<void> {
@@ -79,9 +81,7 @@ export class App {
     const accepted = await this.game.rollAgain();
     if (!accepted) {
       this.selectionError.set('That selection does not score - choose a different combination.');
-      return;
     }
-    this.rollGeneration.update((n) => n + 1);
   }
 
   async pass(): Promise<void> {

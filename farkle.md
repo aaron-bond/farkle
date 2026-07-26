@@ -212,20 +212,19 @@ To provide native-app sensory integration directly through the browser shell, th
 
 ## **UI Screens & Game-Flow Storyboard**
 
-Everything built so far is deliberately unstyled placeholder UI (Milestone 3's wireframe, plus the Milestone 4 dice cubes). This is a text-based storyboard of what a player actually moves through in a play session, used to plan the remaining "CSS Aesthetics" work in Milestone 4 \- no visual mockups yet, this is the flow reference to design against.
+A text-based storyboard of what a player actually moves through in a play session, used to plan the "CSS Aesthetics" work in Milestone 4. All four screens below now share one visual language: a tiled real-wood-texture background (`public/Wood_Surface-base.png`), frosted glassmorphism panels (dark translucent + blur) instead of opaque cards, gold accents for emphasized numbers/headings, a solid-green primary button style, and a glowing-blue-outline secondary button style \- pulled from the user's mockups.
 
-1. **Landing / Difficulty Select** \- shown when there's no active game and no saved session. Three difficulty buttons (Easy 1500 / Medium 3000 / Hard 5000).
+1. **Landing / Difficulty Select** *(styled)* \- shown when there's no active game and no saved session. Three difficulty buttons (Easy 1500 / Medium 3000 / Hard 5000).
 
-1a. **Resume or New Game** *(built, rough pass)* \- a modal (per the user's mockup) shown instead of plain Landing when a saved session exists on load: title, a short explanation, a three-row score summary (your banked total, opponent's banked total, current turn's unbanked score), and two actions \- "Continue Saved Game" (applies the pending state, resuming an in-progress AI turn automatically if that's what was mid-flight) or "Start New Game" (discards the saved session via `clearSession()`, proceeds to Landing/Difficulty Select). A finished (already-won) saved match is discarded automatically rather than ever being offered. Replaces the old silent auto-resume. Not yet matched to the mockup's full visual treatment (photographic background, dimmed live board behind the modal) \- currently a plain dim backdrop with a styled card, deferred until the rest of Milestone 4's aesthetic pass. That basic card/button styling (white rounded card, green primary buttons, neutral secondary buttons) has since been extended consistently to the rest of the app \- Landing, the main board, and all its sub-states \- rather than staying modal-only.
+1a. **Resume or New Game** *(styled)* \- a glass modal (per the user's mockup) shown instead of plain Landing when a saved session exists on load: title with gold underline, a short explanation, a three-row gold score summary (your banked total, opponent's banked total, current turn's unbanked score), and two actions \- "Continue Saved Game" (applies the pending state, resuming an in-progress AI turn automatically if that's what was mid-flight) or "Start New Game" (discards the saved session via `clearSession()`, proceeds to Landing/Difficulty Select). A finished (already-won) saved match is discarded automatically rather than ever being offered. Replaces the old silent auto-resume.
 
-2. **Active Play** \- one persistent screen/board, cycling through sub-states rather than navigating away:  
-   \- **2a. Ready to roll** \- turn score so far (if any carried over), a Roll button showing dice count.  
-   \- **2b. Dice revealed / selection** \- rolled dice shown, player picks which to keep, then Roll Again or Pass.  
-   \- **2c. AI's turn** \- same board, human input disabled, AI visibly selecting dice one at a time.  
-   \- **2d. Farkle (bust)** \- turn lost, single Continue action.  
-   \- **2e. Banked** \- turn score committed, single Continue action.
+2. **Active Play** *(styled)* \- one persistent screen/board, cycling through sub-states rather than navigating away:  
+   \- **2a. Ready to roll** \- dimmed placeholder dice (all showing 6, the one value with no scoring significance) sit in the 3x2 grid before the first roll, rather than an empty dice-less screen; a "Roll" button underneath.  
+   \- **2b. Dice revealed / selection** \- rolled dice shown in a 3x2 grid on CSS-drawn ivory (`#eae2c5`) faces (not the pixel art's own baked-in square, which showed a visible transparent-corner mismatch against the busy background once the flat white page went away); player picks which to keep, then "Score & Roll Again" or "Score & Pass" (plain "Roll Again"/"Pass" when nothing's selected yet, since passing with an empty selection is also valid \- it just banks whatever was already accumulated).  
+   \- **2c. AI's turn** \- same board, all action buttons hidden entirely (not just disabled) since none apply to the human; AI visibly selects dice one at a time with a pause before/between/after each pick.  
+   \- **2d. Farkle (bust)** / **2e. Banked** \- result shown, then auto-advances after a pause (`RESULT_DISPLAY_MS`) \- no "Continue" button for either player anymore, since there's nothing to decide, just something to read.
 
-3. **Game Over** \- win/loss banner, final scores, Play Again. Currently the *only* way out of an in-progress match \- there's no way to abandon a game and start over except by finishing it.
+3. **Game Over** *(styled, via the same shared components)* \- win/loss banner, final scores, Play Again. Still the *only* way out of an in-progress match \- there's no way to abandon a game and start over except by finishing it.
 
 4. **Rules / Help** \- referenced in the original concept art (a "Rules" button) but not built in any form yet. Open question: modal, separate screen, or skip for v1.
 
@@ -237,13 +236,14 @@ Everything built so far is deliberately unstyled placeholder UI (Milestone 3's w
 
 ## **Current Status & Next Steps**
 
-**Done:** Milestones 1, 2, and 3 in full. Milestone 4 is mostly done \- 3D CSS dice with user-provided pixel-art textures, and a working AI opponent (heuristic bank/continue decisions, paced to be watchable, difficulty-tiered). The GitHub Pages deploy pipeline (separate from these milestones) is also live and working.
+**Done:** Milestones 1, 2, and 3 in full. Milestone 4 is mostly done \- 3D CSS dice (now with a CSS-drawn face and the user's pixel-art pips layered on top), a working AI opponent (heuristic bank/continue decisions, paced to be watchable, difficulty-tiered), and a real visual design pass across Landing, Active Play (all sub-states), the Resume/New Game modal, and Game Over \- wood-texture background, glassmorphism panels, gold accents, styled buttons with context-aware labels. The GitHub Pages deploy pipeline (separate from these milestones) is also live and working.
 
 **Open, in priority order:**
 
-1. **Build the real per-screen UI** (Milestone 4's remaining "CSS Aesthetics" work), against the storyboard above. Resume-vs-New-Game is done as a rough pass; still need proper visual treatment for it plus the rest of the screens (Landing, Active Play, Game Over), and a decision on Rules/Help.
-2. **Milestone 5: PWA packaging** \- manifest.json, service worker, offline verification. Nothing built yet.
-3. **Deferred Milestone 4 items** (explicitly lower priority, agreed not to block a playable game):  
+1. **Rules / Help screen** \- the last unstyled/unbuilt screen from the storyboard. Needs a decision on form (modal vs. separate screen vs. skip for v1) before building.
+2. **Remaining storyboard gaps** \- no way to quit/abandon an in-progress game, no settings screen.
+3. **Milestone 5: PWA packaging** \- manifest.json, service worker, offline verification. Nothing built yet.
+4. **Deferred Milestone 4 items** (explicitly lower priority, agreed not to block a playable game):  
    \- Real `transitionend`\-driven staging gate, replacing the artificial `setTimeout` delay.  
    \- Hardware hooks (vibrate, wakeLock) \- nice-to-have, deferred to a much later stage.
 

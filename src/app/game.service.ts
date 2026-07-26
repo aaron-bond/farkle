@@ -39,11 +39,19 @@ export class GameService {
   private readonly _isInputLocked = signal(false);
   private readonly _selectedIndices = signal<number[]>([]);
   private readonly _pendingResume = signal<MatchState | null>(null);
+  // Bumped on every real dice roll (human or AI), so the die cubes always
+  // visibly spin into place even when a reroll happens to land on the same
+  // face as before. Lives here rather than in the component because the AI
+  // drives its own rolls internally (playAiTurn), never touching the
+  // component's methods - a component-local counter would only ever catch
+  // the human's own rolls.
+  private readonly _rollGeneration = signal(0);
 
   readonly activeState = this._activeState.asReadonly();
   readonly isInputLocked = this._isInputLocked.asReadonly();
   readonly selectedIndices = this._selectedIndices.asReadonly();
   readonly pendingResume = this._pendingResume.asReadonly();
+  readonly rollGeneration = this._rollGeneration.asReadonly();
 
   constructor() {
     void this.restoreSession();
@@ -287,6 +295,9 @@ export class GameService {
     this._isInputLocked.set(true);
     await this.wait(STAGING_DELAY_MS);
     this._activeState.set({ ...match, turnState: nextTurnState });
+    if (nextTurnState.phase === 'awaitingSelection' || nextTurnState.phase === 'busted') {
+      this._rollGeneration.update((n) => n + 1);
+    }
     this.persist();
     this._isInputLocked.set(false);
   }

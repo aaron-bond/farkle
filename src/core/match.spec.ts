@@ -64,7 +64,7 @@ describe('advanceTurn', () => {
 
   it('wipes nothing extra on a bust beyond resetting the turn and switching players', () => {
     const match = { ...startMatch('medium'), playerTotalScore: 800 };
-    const next = advanceTurn(match, { phase: 'busted', turnScore: 0 });
+    const next = advanceTurn(match, { phase: 'busted', turnScore: 0, rolledDice: [2, 3, 4, 6, 6, 3] });
     expect(next).toEqual({
       turnState: startTurn(),
       playerTotalScore: 800,

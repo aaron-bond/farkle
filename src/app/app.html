@@ -85,6 +85,11 @@
             }
           }
           @case ('busted') {
+            <div class="dice-row">
+              @for (die of rolledDice(); track $index) {
+                <app-die [value]="die" [disabled]="true" [spin]="rollGeneration()" />
+              }
+            </div>
             <p class="result-banner result-bad">Farkle! Turn lost.</p>
           }
           @case ('banked') {

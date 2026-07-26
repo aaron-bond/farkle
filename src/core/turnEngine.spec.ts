@@ -6,9 +6,9 @@ describe('turnEngine', () => {
     expect(startTurn()).toEqual({ phase: 'ready', turnScore: 0, diceToRoll: 6, isHotDice: false });
   });
 
-  it('busts a turn when a roll has no scoring dice at all', () => {
+  it('busts a turn when a roll has no scoring dice at all, preserving the dice that caused it', () => {
     const state = roll(startTurn(), [2, 3, 4, 6, 6, 3]);
-    expect(state).toEqual({ phase: 'busted', turnScore: 0 });
+    expect(state).toEqual({ phase: 'busted', turnScore: 0, rolledDice: [2, 3, 4, 6, 6, 3] });
   });
 
   it('moves to awaitingSelection when a roll has at least one scoring die', () => {
