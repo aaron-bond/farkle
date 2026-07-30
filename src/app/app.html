@@ -23,7 +23,10 @@
   </div>
 } @else {
   <div class="page">
-    <h1>Farkle</h1>
+    <div class="page-header">
+      <h1>Farkle</h1>
+      <button class="btn btn-compact" (click)="openRules()">Rules</button>
+    </div>
 
     @if (!activeState()) {
       <div class="stacked-actions">
@@ -98,5 +101,82 @@
         }
       }
     }
+  </div>
+}
+
+@if (showRules()) {
+  <div class="modal-backdrop" (click)="closeRules()">
+    <div class="modal-card rules-card" (click)="$event.stopPropagation()">
+      <div class="rules-flip" [class.flipped]="showFullRules()">
+        <div class="rules-face rules-face-front">
+          <div class="rules-face-content">
+            <h2>Rules</h2>
+
+            <table class="rules-table">
+              <caption>Scoring</caption>
+              <tbody>
+                <tr><td>Single 1</td><td>100</td></tr>
+                <tr><td>Single 5</td><td>50</td></tr>
+                <tr><td>1‑2‑3‑4‑5</td><td>500</td></tr>
+                <tr><td>2‑3‑4‑5‑6</td><td>750</td></tr>
+                <tr><td>1‑2‑3‑4‑5‑6</td><td>1500</td></tr>
+              </tbody>
+            </table>
+
+            <table class="rules-table">
+              <caption>Three of a kind</caption>
+              <tbody>
+                <tr><td>1‑1‑1</td><td>1000</td></tr>
+                <tr><td>2‑2‑2</td><td>200</td></tr>
+                <tr><td>3‑3‑3</td><td>300</td></tr>
+                <tr><td>4‑4‑4</td><td>400</td></tr>
+                <tr><td>5‑5‑5</td><td>500</td></tr>
+                <tr><td>6‑6‑6</td><td>600</td></tr>
+              </tbody>
+            </table>
+            <p class="rules-note">4+ of a kind doubles per extra die.</p>
+          </div>
+
+          <div class="rules-actions">
+            <button class="btn btn-primary" (click)="flipToFullRules()">Full Rules &rarr;</button>
+            <button class="btn" (click)="closeRules()">Close</button>
+          </div>
+        </div>
+
+        <div class="rules-face rules-face-back">
+          <div class="rules-face-content">
+            <h2>How to Play</h2>
+            <ul class="rules-guide-list">
+              <li>Roll all 6 dice to start your turn.</li>
+              <li>You must set aside at least one scoring die from every roll before you're allowed to roll again.</li>
+              <li>
+                <strong>Roll Again</strong> to re-roll what's left and risk it, or <strong>Pass</strong> to bank your
+                turn score and end your turn.
+              </li>
+              <li>
+                <strong>Hot dice:</strong> use up all 6 dice and you get to roll all 6 fresh again, keeping your turn
+                score.
+              </li>
+              <li>
+                <strong>Farkle:</strong> roll with no scoring dice at all and you lose everything banked so far this
+                turn - not just the bad roll, the whole turn.
+              </li>
+              <li>
+                First to bank at or past the target wins immediately - there's no final round for the other player.
+              </li>
+              <li>
+                Target score depends on difficulty: Easy 1500 / Medium 3000 / Hard 5000. Higher difficulty also
+                makes the AI opponent play more aggressively.
+              </li>
+            </ul>
+          </div>
+
+          <div class="rules-actions">
+            <button class="btn btn-primary" (click)="flipToScoring()">&larr; Back to Scoring</button>
+            <button class="btn" (click)="closeRules()">Close</button>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 }

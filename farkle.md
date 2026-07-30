@@ -226,24 +226,22 @@ A text-based storyboard of what a player actually moves through in a play sessio
 
 3. **Game Over** *(styled, via the same shared components)* \- win/loss banner, final scores, Play Again. Still the *only* way out of an in-progress match \- there's no way to abandon a game and start over except by finishing it.
 
-4. **Rules / Help** \- referenced in the original concept art (a "Rules" button) but not built in any form yet. Open question: modal, separate screen, or skip for v1.
+4. **Rules / Help** *(styled)* \- a "Rules" button sits next to the title (always available, both on Landing and mid-game) and opens a glass modal, dismissible by clicking outside or "Close". Built as a literal 3D flip card (CSS `rotateY`/`preserve-3d`/`backface-visibility`, same technique as the dice cubes): the front face is both scoring tables (singles/straights, three-of-a-kind-and-beyond), fully visible with no scrolling since that's what a player actually wants mid-turn; a "Full Rules →" button flips the card over to a back face with the fuller "How to play" guide (turn structure, hot dice, farkle, winning), with "← Back to Scoring" to flip back. Each face has its own always-visible action row (flex-column layout, not `position: sticky`) so the buttons never scroll out of view or overlap content.
 
 **Known gaps from this pass** (tracked in Current Status & Next Steps below):
 
 * No way to quit/abandon an in-progress game and start over.  
-* No settings screen (sound/haptics toggles would eventually live here).  
-* Rules/Help doesn't exist yet.
+* No settings screen (sound/haptics toggles would eventually live here).
 
 ## **Current Status & Next Steps**
 
-**Done:** Milestones 1, 2, and 3 in full. Milestone 4 is mostly done \- 3D CSS dice (now with a CSS-drawn face and the user's pixel-art pips layered on top), a working AI opponent (heuristic bank/continue decisions, paced to be watchable, difficulty-tiered), and a real visual design pass across Landing, Active Play (all sub-states), the Resume/New Game modal, and Game Over \- wood-texture background, glassmorphism panels, gold accents, styled buttons with context-aware labels. The GitHub Pages deploy pipeline (separate from these milestones) is also live and working.
+**Done:** Milestones 1, 2, and 3 in full. Milestone 4 is mostly done \- 3D CSS dice (now with a CSS-drawn face and the user's pixel-art pips layered on top), a working AI opponent (heuristic bank/continue decisions, paced to be watchable, difficulty-tiered), and a real visual design pass across every screen in the storyboard (Landing, Active Play, Resume/New Game, Game Over, and now Rules) \- wood-texture background, glassmorphism panels, gold accents, styled buttons with context-aware labels. Playtest fixes: a bust now shows the actual dice that caused it (`TurnState`'s `busted` variant was discarding `rolledDice` entirely), and the guaranteed dice-spin-into-place animation was moved from the UI component into `GameService` so the AI's own rolls animate too, not just the human's. The GitHub Pages deploy pipeline (separate from these milestones) is also live and working.
 
 **Open, in priority order:**
 
-1. **Rules / Help screen** \- the last unstyled/unbuilt screen from the storyboard. Needs a decision on form (modal vs. separate screen vs. skip for v1) before building.
-2. **Remaining storyboard gaps** \- no way to quit/abandon an in-progress game, no settings screen.
-3. **Milestone 5: PWA packaging** \- manifest.json, service worker, offline verification. Nothing built yet.
-4. **Deferred Milestone 4 items** (explicitly lower priority, agreed not to block a playable game):  
+1. **Remaining storyboard gaps** \- no way to quit/abandon an in-progress game, no settings screen.
+2. **Milestone 5: PWA packaging** \- manifest.json, service worker, offline verification. Nothing built yet.
+3. **Deferred Milestone 4 items** (explicitly lower priority, agreed not to block a playable game):  
    \- Real `transitionend`\-driven staging gate, replacing the artificial `setTimeout` delay.  
    \- Hardware hooks (vibrate, wakeLock) \- nice-to-have, deferred to a much later stage.
 

@@ -50,6 +50,25 @@ export class App {
   readonly isHumanTurn = computed(() => this.activeState()?.activePlayer === 'human');
 
   readonly selectionError = signal<string | null>(null);
+  readonly showRules = signal(false);
+  readonly showFullRules = signal(false);
+
+  openRules(): void {
+    this.showRules.set(true);
+  }
+
+  closeRules(): void {
+    this.showRules.set(false);
+    this.showFullRules.set(false);
+  }
+
+  flipToFullRules(): void {
+    this.showFullRules.set(true);
+  }
+
+  flipToScoring(): void {
+    this.showFullRules.set(false);
+  }
 
   startGame(difficulty: Difficulty): void {
     this.game.startGame(difficulty);

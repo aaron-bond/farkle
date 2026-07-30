@@ -38,12 +38,24 @@
   margin: 0 auto;
 }
 
-.page h1,
 .modal-card h2 {
   margin-top: 0;
   padding-bottom: 12px;
   border-bottom: 2px solid #e3b23c;
   text-align: center;
+}
+
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 12px;
+  margin-bottom: 16px;
+  border-bottom: 2px solid #e3b23c;
+}
+
+.page-header h1 {
+  margin: 0;
 }
 
 /* Shared button styling, reused by the modal and the main page */
@@ -65,6 +77,16 @@
   opacity: 0.4;
   cursor: default;
   box-shadow: none;
+}
+
+/* A small utility button (Rules) that shouldn't compete with primary actions */
+.btn-compact {
+  display: inline-block;
+  width: auto;
+  margin-top: 0;
+  padding: 6px 14px;
+  font-size: 0.85rem;
+  white-space: nowrap;
 }
 
 .btn-primary {
@@ -149,6 +171,8 @@
 .modal-card {
   max-width: 360px;
   width: 100%;
+  max-height: 85vh;
+  overflow-y: auto;
 }
 
 .score-summary {
@@ -173,4 +197,104 @@
   margin: 0;
   color: #f5d98a;
   font-weight: 600;
+}
+
+/*
+ * Rules modal: the scoring tables are the "quick reference" a player actually
+ * wants mid-turn, so they get their own card face with no scrolling needed.
+ * "Full Rules" is a literal flip to the reverse side (like turning a card
+ * over), reusing the same rotateY/preserve-3d/backface-visibility approach
+ * as the dice cubes. .rules-card overrides the general .modal-card scroll
+ * behavior - overflow now belongs to each face individually (see below),
+ * since a 3D-transformed ancestor inside an overflow:auto box is unreliable
+ * across browsers.
+ */
+.rules-card {
+  max-height: none;
+  overflow: visible;
+  perspective: 1200px;
+}
+
+.rules-flip {
+  position: relative;
+  transform-style: preserve-3d;
+  transition: transform 600ms ease;
+}
+
+.rules-flip.flipped {
+  transform: rotateY(180deg);
+}
+
+.rules-face {
+  backface-visibility: hidden;
+  display: flex;
+  flex-direction: column;
+  max-height: 85vh;
+}
+
+.rules-face-back {
+  position: absolute;
+  inset: 0;
+  transform: rotateY(180deg);
+}
+
+/* Only this inner region scrolls - the actions row below it is a separate
+   flex item, so it always has its own reserved space and can never end up
+   overlapping/hiding the tail end of the scrollable content the way an
+   overlaid position:sticky bar would. */
+.rules-face-content {
+  overflow-y: auto;
+  flex: 1;
+  min-height: 0;
+}
+
+.rules-actions {
+  flex-shrink: 0;
+  padding-top: 12px;
+}
+
+.rules-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 12px;
+  font-size: 0.9rem;
+}
+
+.rules-table caption {
+  caption-side: top;
+  text-align: left;
+  font-weight: 700;
+  text-transform: uppercase;
+  font-size: 0.8rem;
+  color: #e3b23c;
+  padding-bottom: 4px;
+}
+
+.rules-table td {
+  padding: 4px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.rules-table td:last-child {
+  text-align: right;
+  font-weight: 600;
+  color: #f5d98a;
+}
+
+.rules-note {
+  font-size: 0.8rem;
+  color: #cfcfcf;
+  margin: 0 0 20px;
+}
+
+.rules-guide-list {
+  margin: 0 0 16px;
+  padding-left: 20px;
+  font-size: 0.85rem;
+  color: #d8d3c8;
+  line-height: 1.5;
+}
+
+.rules-guide-list li {
+  margin-bottom: 8px;
 }
