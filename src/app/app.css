@@ -49,6 +49,7 @@
    to be tiled with - now it only frames the playing surface). */
 .table {
   --die-size: 76px;
+  --dice-gap: 16px;
   flex: 1;
   min-height: 300px;
   display: flex;
@@ -102,13 +103,14 @@
   color: var(--on-sage);
 }
 
-/* Three across, so 6 dice sit as a 3x2 block and 5 as a centered 3+2. */
+/* Three across at every size, so 6 dice sit as a 3x2 block and 5 as a
+   centered 3+2 - never a 5+1 straggler on a wide screen. */
 .dice-row {
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
-  gap: 16px;
-  max-width: calc(var(--die-size) * 3 + 16px * 2);
+  gap: var(--dice-gap);
+  max-width: calc(var(--die-size) * 3 + var(--dice-gap) * 2);
 }
 
 .table-note {
@@ -276,15 +278,11 @@
 
   .table {
     --die-size: 100px;
+    --dice-gap: 28px;
     grid-area: table;
     min-height: 460px;
     border-width: 16px;
     border-radius: 40px;
-  }
-
-  .dice-row {
-    gap: 28px;
-    max-width: none;
   }
 
   .sheet {
