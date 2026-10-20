@@ -1,16 +1,30 @@
+/* Size and selection colors are inherited custom properties, so the play
+   screen can scale the dice per breakpoint and tint the ring sage while the
+   dealer is picking - without the die knowing whose turn it is. */
 .die {
-  --die-size: 60px;
   all: unset;
   cursor: pointer;
   display: inline-block;
-  width: var(--die-size);
-  height: var(--die-size);
-  margin: 8px;
+  width: var(--die-size, 60px);
+  height: var(--die-size, 60px);
+  border-radius: 12px;
   perspective: 400px;
+  /* Grounding shadow lives on the non-rotated button box, not the 3D-transformed
+     .cube/.face elements - a shadow on a preserve-3d/backface-hidden element
+     rotates and disappears along with the face, which isn't how a die casting
+     a shadow on the table actually looks. */
+  filter: drop-shadow(0 6px 6px rgba(0, 0, 0, 0.45));
+  transition: filter 200ms ease, transform 200ms ease;
 }
 
 .die:disabled {
   cursor: default;
+}
+
+/* all: unset strips the browser's focus ring, so restore one explicitly. */
+.die:focus-visible {
+  outline: 3px solid var(--ivory, #fff);
+  outline-offset: 4px;
 }
 
 .cube {
@@ -23,37 +37,64 @@
   pointer-events: none;
 }
 
-/*
- * The die-face images only contain the pips now (see public/dice/) - the
- * square itself, its border, and its corner-cutout bevel used to be baked
- * into the pixel art, but that meant a chunk of each 22x22 image was just
- * transparent margin. That was invisible against the old plain white page,
- * but once the app moved to a busy wood/glass background, the transparent
- * margin (and its blocky, non-antialiased corner cutouts) started showing
- * through as a visible mismatch. Recreating the square face in CSS instead
- * (background-color/border/border-radius here) means it always matches
- * whatever's actually behind the die, and the corners are genuinely smooth
- * rather than a fixed pixel-art cutout. Border color is lifted from the
- * original art's palette (#2b3b3d); fill is a custom warm ivory instead of
- * the original art's cool gray, to sit better against the wood background.
- */
+/* Positioning/3D-transform layer only - the actual visible material lives on
+   the nested .face-surface (see below). */
 .face {
   position: absolute;
   inset: 0;
   width: var(--die-size);
   height: var(--die-size);
   box-sizing: border-box;
-  background-color: #eae2c5;
-  border: 2px solid #2b3b3d;
-  border-radius: 8px;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.6);
-  background-size: 80%;
-  background-position: center;
-  background-repeat: no-repeat;
-  image-rendering: pixelated;
   backface-visibility: hidden;
   pointer-events: none;
   transition: filter 200ms ease;
+}
+
+/*
+ * The rounded, shaded material lives on this plain nested element rather than
+ * directly on .face. .face itself carries the 3D translateZ/rotate transform
+ * and backface-visibility: hidden - combining that with border-radius on the
+ * very same element triggers a Chromium compositing bug where the rounded
+ * corners get clipped with a faint white/light halo instead of cleanly. Since
+ * .face-surface has no transform of its own (it just inherits its parent's
+ * already-resolved 3D position as an ordinary box), its corner clipping goes
+ * through the normal 2D path and renders correctly.
+ */
+.face-surface {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  border-radius: 10px;
+  /* A radial sheen (bright upper-left, darker lower-right) reads as a rounded,
+     lit material instead of a flat tile - cheap to fake with a gradient rather
+     than needing a real rendered/textured face image. */
+  background-color: #eae2c5;
+  background-image:
+    radial-gradient(circle at 30% 22%, rgba(255, 255, 255, 0.85) 0%, rgba(255, 255, 255, 0) 45%),
+    linear-gradient(135deg, #fbf6e3 0%, #eae2c5 55%, #cfc39c 100%);
+  /* Edge definition comes entirely from shadow, not a stroke - a hard 1px
+     border reads as a flat cartoon outline sitting on top of the shading and
+     breaks the illusion of a lit, rounded material. The outer shadow here
+     does the same job (separating the die from the background) but as a soft
+     falloff instead of a hard line. */
+  box-shadow:
+    inset 0 1px 1px rgba(255, 255, 255, 0.7),
+    inset -3px -3px 6px rgba(0, 0, 0, 0.22),
+    inset 3px 3px 5px rgba(255, 255, 255, 0.25),
+    0 0 3px rgba(0, 0, 0, 0.35);
+}
+
+/* Pips are real circles, positioned by percentage (see PIP_LAYOUTS in die.ts)
+   and centered on that point via the translate. */
+.pip {
+  position: absolute;
+  width: 18%;
+  height: 18%;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  background-color: #a3241f;
+  background-image: radial-gradient(circle at 35% 30%, rgba(255, 255, 255, 0.55) 0%, rgba(255, 255, 255, 0) 55%);
+  box-shadow: inset -1px -1px 2px rgba(0, 0, 0, 0.4);
 }
 
 .face-front {
@@ -75,8 +116,16 @@
   transform: rotateX(-90deg) translateZ(calc(var(--die-size) / 2));
 }
 
-.die.selected .face {
-  filter: drop-shadow(0 0 4px gold);
+.die.selected {
+  transform: translateY(-6px);
+  filter: drop-shadow(0 10px 8px rgba(0, 0, 0, 0.45)) drop-shadow(0 0 10px var(--die-glow, rgba(240, 200, 90, 0.85)));
+}
+
+.die.selected .face-surface {
+  box-shadow:
+    inset 0 0 0 3px var(--die-ring, #e0b450),
+    inset -3px -3px 6px rgba(0, 0, 0, 0.22),
+    0 0 3px rgba(0, 0, 0, 0.35);
 }
 
 .die.placeholder {

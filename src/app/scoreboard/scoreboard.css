@@ -1,0 +1,140 @@
+/*
+ * Phone: one compact panel with a row per player. Desktop: each player
+ * becomes its own card in the left column, with a much larger score - the
+ * same markup, just restacked.
+ */
+:host {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px 14px;
+  border-radius: 16px;
+  background: rgba(0, 0, 0, 0.28);
+}
+
+.player {
+  --accent: var(--brass);
+  --on-accent: var(--on-brass);
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: baseline;
+  gap: 6px 12px;
+}
+
+.player-dealer {
+  --accent: var(--sage);
+  --on-accent: var(--on-sage);
+}
+
+.player-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.player-name {
+  font-weight: 800;
+  font-size: 0.8rem;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.active .player-name {
+  color: var(--ivory);
+}
+
+.badge {
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--accent);
+  color: var(--on-accent);
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+.player-score {
+  font-family: var(--font-display);
+  font-size: 1.4rem;
+  line-height: 1;
+}
+
+.bar {
+  grid-column: 1 / -1;
+  display: flex;
+  height: 8px;
+  border-radius: 4px;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.bar-fill,
+.bar-ghost {
+  transition: width 400ms ease;
+}
+
+.bar-fill {
+  background: var(--accent);
+}
+
+.bar-ghost {
+  background: repeating-linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--accent) 75%, transparent) 0 4px,
+    color-mix(in srgb, var(--accent) 25%, transparent) 4px 8px
+  );
+}
+
+.player-hint {
+  grid-column: 1 / -1;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.target {
+  margin: 0;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  text-align: right;
+}
+
+@media (min-width: 960px) {
+  :host {
+    padding: 0;
+    gap: 16px;
+    background: none;
+  }
+
+  .player {
+    grid-template-columns: 1fr;
+    gap: 10px;
+    padding: 20px;
+    border-radius: 20px;
+    background: rgba(0, 0, 0, 0.25);
+    border: 2px solid transparent;
+  }
+
+  .player.active {
+    border-color: var(--accent);
+  }
+
+  .player-head {
+    justify-content: space-between;
+  }
+
+  .player-score {
+    font-size: 3.25rem;
+  }
+
+  .bar {
+    height: 10px;
+    border-radius: 5px;
+  }
+
+  .target {
+    text-align: left;
+    font-size: 0.85rem;
+  }
+}

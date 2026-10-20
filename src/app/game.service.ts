@@ -46,6 +46,13 @@ export class GameService {
   // component's methods - a component-local counter would only ever catch
   // the human's own rolls.
   private readonly _rollGeneration = signal(0);
+  // Identifies the game currently on the table. The turn flow is a chain of
+  // timed async steps (staging delays, AI thinking pauses, result holds), so
+  // leaving the table mid-chain would otherwise let a step that was already
+  // waiting land afterwards and put the abandoned game straight back on
+  // screen. Every step captures this before it waits and bails out if it
+  // changed in the meantime.
+  private session = 0;
 
   readonly activeState = this._activeState.asReadonly();
   readonly isInputLocked = this._isInputLocked.asReadonly();
@@ -93,6 +100,7 @@ export class GameService {
   }
 
   startGame(difficulty: Difficulty, startingPlayer: PlayerId = 'human'): void {
+    this.session++;
     const match = startMatch(difficulty, startingPlayer);
     this._activeState.set(match);
     this.persist();
@@ -102,9 +110,26 @@ export class GameService {
   }
 
   resetGame(): void {
-    this._activeState.set(null);
-    this._selectedIndices.set([]);
+    this.endSession();
     void this.storage.clearSession();
+  }
+
+  // Back to the start screen without losing anything: an unfinished game
+  // stays saved and is offered as the pending resume, exactly as if the page
+  // had been reloaded - so leaving needs no "are you sure?" step. Whatever
+  // was mid-flight (including an AI turn) is cut off; resuming picks up from
+  // the last committed state, which is also what was persisted. A finished
+  // game has nothing to come back to, so it's simply cleared.
+  leaveTable(): void {
+    const match = this._activeState();
+    if (!match) return;
+
+    this.endSession();
+    if (match.winner) {
+      void this.storage.clearSession();
+    } else {
+      this._pendingResume.set(match);
+    }
   }
 
   toggleDieSelection(index: number): void {
@@ -183,8 +208,10 @@ export class GameService {
     if (!match) return;
     if (match.turnState.phase !== 'busted' && match.turnState.phase !== 'banked') return;
 
+    const session = this.session;
     this._isInputLocked.set(true);
     await this.wait(RESULT_DISPLAY_MS);
+    if (session !== this.session) return;
     await this.performFinishTurn(match);
   }
 
@@ -198,9 +225,11 @@ export class GameService {
   private async playAiTurn(): Promise<void> {
     let match = this._activeState();
     if (!match || match.winner || match.activePlayer !== 'ai') return;
+    const session = this.session;
 
     if (match.turnState.phase === 'ready') {
       await this.performRoll(match, match.turnState);
+      if (session !== this.session) return;
       match = this._activeState()!;
     }
 
@@ -220,12 +249,14 @@ export class GameService {
       });
 
       await this.revealAiSelection(indices);
+      if (session !== this.session) return;
 
       if (continueRolling) {
         await this.performSelectionAndRoll(match, turnState, indices);
       } else {
         await this.performSelectionAndBank(match, turnState, indices);
       }
+      if (session !== this.session) return;
       this._selectedIndices.set([]);
       match = this._activeState()!;
     }
@@ -239,10 +270,12 @@ export class GameService {
   // watching can actually follow it, rather than the whole selection
   // appearing at once right before it submits.
   private async revealAiSelection(indices: number[]): Promise<void> {
+    const session = this.session;
     this._isInputLocked.set(true);
     this._selectedIndices.set([]);
     await this.wait(AI_THINKING_DELAY_MS);
     for (const index of indices) {
+      if (session !== this.session) return;
       this._selectedIndices.update((current) => [...current, index]);
       await this.wait(AI_THINKING_DELAY_MS);
     }
@@ -279,8 +312,10 @@ export class GameService {
   }
 
   private async performFinishTurn(match: MatchState): Promise<void> {
+    const session = this.session;
     this._isInputLocked.set(true);
     await this.wait(STAGING_DELAY_MS);
+    if (session !== this.session) return;
     const next = advanceTurn(match, match.turnState);
     this._activeState.set(next);
     this.persist();
@@ -292,8 +327,10 @@ export class GameService {
   }
 
   private async stageTurnState(match: MatchState, nextTurnState: TurnState): Promise<void> {
+    const session = this.session;
     this._isInputLocked.set(true);
     await this.wait(STAGING_DELAY_MS);
+    if (session !== this.session) return;
     this._activeState.set({ ...match, turnState: nextTurnState });
     if (nextTurnState.phase === 'awaitingSelection' || nextTurnState.phase === 'busted') {
       this._rollGeneration.update((n) => n + 1);
@@ -308,6 +345,15 @@ export class GameService {
   private persist(): void {
     const match = this._activeState();
     if (match) void this.storage.saveGameState(match);
+  }
+
+  // Clears the table and invalidates every async step still in flight for
+  // the game that was on it (see `session`).
+  private endSession(): void {
+    this.session++;
+    this._activeState.set(null);
+    this._selectedIndices.set([]);
+    this._isInputLocked.set(false);
   }
 
   private wait(ms: number): Promise<void> {

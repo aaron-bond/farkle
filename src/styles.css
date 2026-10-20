@@ -1,1 +1,119 @@
-/* You can add global styles to this file, and also import other style files */
+/*
+ * "High Roller" design tokens - a felt card table with a wood rim and brass
+ * accents. Everything visual pulls from these, so components never hard-code
+ * a color. Brass always means "you / your action"; sage always means the
+ * dealer (AI), so whose dice and whose score are on screen is readable at a
+ * glance without relying on hue alone (they differ in lightness too).
+ */
+:root {
+  --felt-hi: #1b6b52;
+  --felt: #11493a;
+  --felt-deep: #0b3326;
+  --felt-darkest: #061d15;
+  --rim: #3a2516;
+
+  --brass: #e0b450;
+  --brass-hi: #f0c766;
+  --brass-lo: #c99a33;
+  --brass-shadow: #8a6619;
+  --on-brass: #1f1608;
+
+  --sage: #8fb7a4;
+  --on-sage: #072319;
+
+  --ivory: #f4ecd8;
+  --text-soft: #d6e2da;
+  --text-muted: #b9c8bd;
+  --danger: #f2a38f;
+
+  --bust-felt: #4a2a24;
+  --bust-felt-deep: #2a1714;
+
+  --font-display: 'DM Serif Display', Georgia, serif;
+  --font-body: Manrope, system-ui, sans-serif;
+}
+
+html,
+body {
+  margin: 0;
+  min-height: 100%;
+  background: var(--felt-darkest);
+}
+
+body {
+  font-family: var(--font-body);
+  color: var(--ivory);
+  -webkit-tap-highlight-color: transparent;
+}
+
+/*
+ * Buttons are global rather than per-component: the scoreboard, play screen
+ * and modals all share them, and component stylesheets have a hard size
+ * budget (angular.json) that duplicating these would eat into.
+ */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 52px;
+  padding: 0 20px;
+  border-radius: 16px;
+  border: 2px solid var(--brass);
+  background: transparent;
+  color: var(--brass);
+  font: 800 1rem var(--font-body);
+  cursor: pointer;
+  transition: transform 120ms ease, box-shadow 120ms ease, opacity 120ms ease;
+}
+
+.btn-primary {
+  border: 0;
+  background: linear-gradient(180deg, var(--brass-hi), var(--brass-lo));
+  color: var(--on-brass);
+  box-shadow: 0 4px 0 var(--brass-shadow);
+}
+
+.btn-primary:active:not(:disabled) {
+  transform: translateY(3px);
+  box-shadow: 0 1px 0 var(--brass-shadow);
+}
+
+.btn:disabled {
+  cursor: default;
+  border-color: transparent;
+  background: rgba(255, 255, 255, 0.07);
+  color: var(--text-muted);
+  box-shadow: none;
+}
+
+.btn-block {
+  width: 100%;
+}
+
+/* Secondary utility actions (Leave table) that shouldn't compete with play. */
+.btn-small {
+  min-height: 44px;
+  padding: 0 16px;
+  border-width: 1px;
+  border-color: rgba(224, 180, 80, 0.45);
+  border-radius: 22px;
+  font-size: 0.9rem;
+}
+
+/* Round icon-only button (Rules) - always paired with an aria-label. */
+.icon-btn {
+  width: 44px;
+  height: 44px;
+  border-radius: 22px;
+  border: 1px solid rgba(224, 180, 80, 0.45);
+  background: rgba(0, 0, 0, 0.2);
+  color: var(--brass);
+  font: 800 1.1rem var(--font-body);
+  cursor: pointer;
+}
+
+.btn:focus-visible,
+.icon-btn:focus-visible {
+  outline: 3px solid var(--ivory);
+  outline-offset: 3px;
+}

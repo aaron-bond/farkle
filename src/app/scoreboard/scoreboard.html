@@ -1,0 +1,46 @@
+<div class="player" [class.active]="activePlayer() === 'human'">
+  <div class="player-head">
+    <span class="player-name">You</span>
+    @if (activePlayer() === 'human') {
+      <span class="badge">Rolling</span>
+    }
+  </div>
+  <span class="player-score">{{ playerScore() | number }}</span>
+  <div
+    class="bar"
+    role="progressbar"
+    aria-label="Your progress to the target"
+    aria-valuemin="0"
+    [attr.aria-valuemax]="targetScore()"
+    [attr.aria-valuenow]="playerScore()"
+  >
+    <span class="bar-fill" [style.width.%]="playerPct()"></span>
+    <span class="bar-ghost" [style.width.%]="playerGhostPct()"></span>
+  </div>
+  @if (playerGhostPct() > 0) {
+    <span class="player-hint">{{ playerScore() + pendingScore() | number }} if you bank</span>
+  }
+</div>
+
+<div class="player player-dealer" [class.active]="activePlayer() === 'ai'">
+  <div class="player-head">
+    <span class="player-name">Dealer · {{ difficultyLabel() }}</span>
+    @if (activePlayer() === 'ai') {
+      <span class="badge">Rolling</span>
+    }
+  </div>
+  <span class="player-score">{{ aiScore() | number }}</span>
+  <div
+    class="bar"
+    role="progressbar"
+    aria-label="Dealer's progress to the target"
+    aria-valuemin="0"
+    [attr.aria-valuemax]="targetScore()"
+    [attr.aria-valuenow]="aiScore()"
+  >
+    <span class="bar-fill" [style.width.%]="aiPct()"></span>
+    <span class="bar-ghost" [style.width.%]="aiGhostPct()"></span>
+  </div>
+</div>
+
+<p class="target">First to {{ targetScore() | number }} wins</p>

@@ -12,13 +12,6 @@ const FACE_ROTATIONS: Record<number, { x: number; y: number }> = {
   4: { x: 90, y: 0 },
 };
 
-// The die-face images live in public/dice/ (runtime static assets), not
-// alongside this component's source, so the url() can't be a static CSS
-// reference: an absolute path ("/dice/...") ignores <base href> entirely and
-// breaks under GitHub Pages' /farkle/ subpath, while a relative CSS path gets
-// resolved by the build as a source-relative file import and fails outright.
-// Binding it from the component instead sidesteps both: the string is built
-// at runtime and resolved by the browser against the document's <base href>.
 const FACE_LAYOUT: { cssClass: string; value: number }[] = [
   { cssClass: 'face-front', value: 1 },
   { cssClass: 'face-back', value: 6 },
@@ -27,6 +20,51 @@ const FACE_LAYOUT: { cssClass: string; value: number }[] = [
   { cssClass: 'face-top', value: 3 },
   { cssClass: 'face-bottom', value: 4 },
 ];
+
+// Standard 3x3 pip grid, as percentages of the face box. The old pip artwork
+// (public/dice/die-*.png) drew each dot as a handful of raw pixels, which at
+// this size read as a plus/cross rather than a circle - real CSS circles
+// (see .pip in die.css) don't have that resolution ceiling.
+const LEFT = 22;
+const CENTER = 50;
+const RIGHT = 78;
+const TOP = 22;
+const MIDDLE = 50;
+const BOTTOM = 78;
+
+export const PIP_LAYOUTS: Record<number, { top: number; left: number }[]> = {
+  1: [{ top: MIDDLE, left: CENTER }],
+  2: [
+    { top: TOP, left: LEFT },
+    { top: BOTTOM, left: RIGHT },
+  ],
+  3: [
+    { top: TOP, left: LEFT },
+    { top: MIDDLE, left: CENTER },
+    { top: BOTTOM, left: RIGHT },
+  ],
+  4: [
+    { top: TOP, left: LEFT },
+    { top: TOP, left: RIGHT },
+    { top: BOTTOM, left: LEFT },
+    { top: BOTTOM, left: RIGHT },
+  ],
+  5: [
+    { top: TOP, left: LEFT },
+    { top: TOP, left: RIGHT },
+    { top: MIDDLE, left: CENTER },
+    { top: BOTTOM, left: LEFT },
+    { top: BOTTOM, left: RIGHT },
+  ],
+  6: [
+    { top: TOP, left: LEFT },
+    { top: MIDDLE, left: LEFT },
+    { top: BOTTOM, left: LEFT },
+    { top: TOP, left: RIGHT },
+    { top: MIDDLE, left: RIGHT },
+    { top: BOTTOM, left: RIGHT },
+  ],
+};
 
 @Component({
   selector: 'app-die',
@@ -78,8 +116,8 @@ export class Die {
     return `rotateX(${rotation.x + extraTurns}deg) rotateY(${rotation.y + extraTurns}deg)`;
   });
 
-  faceImage(value: number): string {
-    return `url(dice/die-${value}.png)`;
+  pipPositions(value: number): { top: number; left: number }[] {
+    return PIP_LAYOUTS[value] ?? [];
   }
 
   onClick(): void {

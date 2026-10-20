@@ -1,0 +1,71 @@
+<dialog
+  #dialog
+  class="sheet"
+  aria-labelledby="rules-title"
+  (close)="closed.emit()"
+  (click)="onDialogClick($event)"
+>
+  <div class="sheet-body">
+    <div class="grab" aria-hidden="true"></div>
+    <header class="sheet-head">
+      <h2 id="rules-title">House rules</h2>
+      <button class="icon-btn" aria-label="Close rules" (click)="close()">
+        <svg
+          aria-hidden="true"
+          width="16"
+          height="16"
+          viewBox="0 0 16 16"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+        >
+          <path d="M3 3l10 10M13 3L3 13" />
+        </svg>
+      </button>
+    </header>
+
+    <div class="tabs" role="tablist" aria-label="Rules sections">
+      <button
+        role="tab"
+        id="rules-tab-scoring"
+        aria-controls="rules-panel"
+        [attr.aria-selected]="tab() === 'scoring'"
+        [class.active]="tab() === 'scoring'"
+        (click)="tab.set('scoring')"
+      >
+        Scoring
+      </button>
+      <button
+        role="tab"
+        id="rules-tab-how"
+        aria-controls="rules-panel"
+        [attr.aria-selected]="tab() === 'how'"
+        [class.active]="tab() === 'how'"
+        (click)="tab.set('how')"
+      >
+        How to play
+      </button>
+    </div>
+
+    <div
+      class="panel"
+      id="rules-panel"
+      role="tabpanel"
+      [attr.aria-labelledby]="tab() === 'scoring' ? 'rules-tab-scoring' : 'rules-tab-how'"
+    >
+      @if (tab() === 'scoring') {
+        <app-scoring-guide [heading]="false" />
+      } @else {
+        <ol class="steps">
+          @for (step of steps; track step.title) {
+            <li>
+              <strong>{{ step.title }}</strong>
+              <span>{{ step.body }}</span>
+            </li>
+          }
+        </ol>
+      }
+    </div>
+  </div>
+</dialog>

@@ -212,36 +212,45 @@ To provide native-app sensory integration directly through the browser shell, th
 
 ## **UI Screens & Game-Flow Storyboard**
 
-A text-based storyboard of what a player actually moves through in a play session, used to plan the "CSS Aesthetics" work in Milestone 4. All four screens below now share one visual language: a tiled real-wood-texture background (`public/Wood_Surface-base.png`), frosted glassmorphism panels (dark translucent + blur) instead of opaque cards, gold accents for emphasized numbers/headings, a solid-green primary button style, and a glowing-blue-outline secondary button style \- pulled from the user's mockups.
+A text-based storyboard of what a player actually moves through in a play session. Every screen shares one visual language, **"High Roller"**: a green felt card table framed by a wood rim (the real wood texture, `public/Wood_Surface-base.png`, now dresses only the rim rather than tiling the whole page), brass accents for anything that is *yours* (your score, your selection, your primary actions) and sage for anything that is the *dealer's* (the AI), DM Serif Display for numbers/headings over Manrope body text. All colors and fonts are tokens in `src/styles.css`; buttons are global classes there too, since component stylesheets have a hard size budget (`angular.json`). Chosen from three explored directions (felt/brass, neon arcade, bright toybox) in a design session.
 
-1. **Landing / Difficulty Select** *(styled)* \- shown when there's no active game and no saved session. Three difficulty buttons (Easy 1500 / Medium 3000 / Hard 5000).
+Layout is phone-first: on phones the actions live in a bottom sheet within thumb reach; from 960px wide the same pieces regroup into a three-column desktop layout instead of one narrow card floating in empty space.
 
-1a. **Resume or New Game** *(styled)* \- a glass modal (per the user's mockup) shown instead of plain Landing when a saved session exists on load: title with gold underline, a short explanation, a three-row gold score summary (your banked total, opponent's banked total, current turn's unbanked score), and two actions \- "Continue Saved Game" (applies the pending state, resuming an in-progress AI turn automatically if that's what was mid-flight) or "Start New Game" (discards the saved session via `clearSession()`, proceeds to Landing/Difficulty Select). A finished (already-won) saved match is discarded automatically rather than ever being offered. Replaces the old silent auto-resume.
+1. **Start / Difficulty Select** (`Landing` component) \- brass "Farkle" wordmark with decorative dice, tagline, and three difficulty cards (Easy 1500 "the dealer plays it safe" / Medium 3000 / Hard 5000 "the dealer presses its luck"), Medium preselected, then a "Deal me in" button. Desktop puts the text column beside a felt table scattered with dice.
 
-2. **Active Play** *(styled)* \- one persistent screen/board, cycling through sub-states rather than navigating away:  
-   \- **2a. Ready to roll** \- dimmed placeholder dice (all showing 6, the one value with no scoring significance) sit in the 3x2 grid before the first roll, rather than an empty dice-less screen; a "Roll" button underneath.  
-   \- **2b. Dice revealed / selection** \- rolled dice shown in a 3x2 grid on CSS-drawn ivory (`#eae2c5`) faces (not the pixel art's own baked-in square, which showed a visible transparent-corner mismatch against the busy background once the flat white page went away); player picks which to keep, then "Score & Roll Again" or "Score & Pass" (plain "Roll Again"/"Pass" when nothing's selected yet, since passing with an empty selection is also valid \- it just banks whatever was already accumulated).  
-   \- **2c. AI's turn** \- same board, all action buttons hidden entirely (not just disabled) since none apply to the human; AI visibly selects dice one at a time with a pause before/between/after each pick.  
-   \- **2d. Farkle (bust)** / **2e. Banked** \- result shown, then auto-advances after a pause (`RESULT_DISPLAY_MS`) \- no "Continue" button for either player anymore, since there's nothing to decide, just something to read.
+1a. **Resume** \- a saved unfinished game is offered as an inline "Resume" card on the start screen (difficulty plus both banked scores), replacing the old blocking "Continue Saved Game?" modal. Resume applies the pending state (resuming an in-progress AI turn automatically if that's what was mid-flight); picking a table and dealing in instead discards the save. A finished (already-won) saved match is still discarded automatically rather than offered.
 
-3. **Game Over** *(styled, via the same shared components)* \- win/loss banner, final scores, Play Again. Still the *only* way out of an in-progress match \- there's no way to abandon a game and start over except by finishing it.
+2. **Active Play** \- one persistent screen, cycling through sub-states rather than navigating away. A `Scoreboard` component shows both players with a progress bar toward the target; the active player's unbanked turn score is drawn as a striped extension of their bar ("2,300 if you bank"), so bank-or-push reads against the race. Desktop adds a permanent `ScoringGuide` sidebar.  
+   \- **2a. Ready to roll** \- dimmed placeholder dice (all showing 6) on the felt; "Roll 6 dice" in the sheet.  
+   \- **2b. Dice revealed / selection** \- CSS-drawn ivory dice with red CSS-circle pips; tapping keeps a die (brass ring, glow and lift). The sheet previews the selection live via the same `evaluateSelection` call the submit uses ("+400", or "Doesn't score" before you commit), shows the **at-risk** total as the biggest number on screen, and labels the buttons by outcome: "Bank 450" and "Roll 1 die" / "Hot dice! Roll 6" ("Pick scoring dice" while nothing valid is selected). Banking with nothing selected is still valid and banks what was already accumulated.  
+   \- **2c. Dealer's turn** \- same board with sage turn chip and sage selection rings, so the dealer's picks never look like the player's; action buttons are replaced by "Dealer is thinking…" and the dealer's at-risk total. The AI still reveals its picks one die at a time.  
+   \- **2d. Farkle (bust)** \- the felt turns a dim red-brown, the dice that caused it stay visible, "Farkle!" headline with the lost amount struck through. **2e. Banked** \- "+N" headline. Both auto-advance after `RESULT_DISPLAY_MS`; the sheet says whose turn is next.  
+   \- **Leave table** \- a top-bar button returns to the start screen *without* losing the game: an unfinished match stays saved and comes back as the Resume card (so no confirmation step is needed); a finished one is cleared. `GameService` keeps a session counter that every timed async step checks, so an AI turn or staging delay already in flight when you leave can't land afterwards and put the abandoned game back on the table.
 
-4. **Rules / Help** *(styled)* \- a "Rules" button sits next to the title (always available, both on Landing and mid-game) and opens a glass modal, dismissible by clicking outside or "Close". Built as a literal 3D flip card (CSS `rotateY`/`preserve-3d`/`backface-visibility`, same technique as the dice cubes): the front face is both scoring tables (singles/straights, three-of-a-kind-and-beyond), fully visible with no scrolling since that's what a player actually wants mid-turn; a "Full Rules →" button flips the card over to a back face with the fuller "How to play" guide (turn structure, hot dice, farkle, winning), with "← Back to Scoring" to flip back. Each face has its own always-visible action row (flex-column layout, not `position: sticky`) so the buttons never scroll out of view or overlap content.
+3. **Game Over** \- "You win" / "Dealer wins" on the felt with the final scores, Play again in the sheet.
 
-**Known gaps from this pass** (tracked in Current Status & Next Steps below):
+4. **Rules** (`RulesSheet` component) \- the **?** button (start screen and mid-game) opens a native `<dialog>` via `showModal()`, which provides focus trapping, Escape-to-close and an inert page behind it; clicking the backdrop or ✕ also closes it. Slides up as a bottom sheet on phones, centered on desktop. Two tabs: **Scoring** (the same `ScoringGuide` as the desktop sidebar, each combination illustrated with small dice drawn from the die component's pip layout) and **How to play** (numbered steps). Replaces the earlier 3D flip-card modal.
 
-* No way to quit/abandon an in-progress game and start over.  
+**Known gaps** (tracked in Current Status & Next Steps below):
+
 * No settings screen (sound/haptics toggles would eventually live here).
 
 ## **Current Status & Next Steps**
 
-**Done:** Milestones 1, 2, and 3 in full. Milestone 4 is mostly done \- 3D CSS dice (now with a CSS-drawn face and the user's pixel-art pips layered on top), a working AI opponent (heuristic bank/continue decisions, paced to be watchable, difficulty-tiered), and a real visual design pass across every screen in the storyboard (Landing, Active Play, Resume/New Game, Game Over, and now Rules) \- wood-texture background, glassmorphism panels, gold accents, styled buttons with context-aware labels. Playtest fixes: a bust now shows the actual dice that caused it (`TurnState`'s `busted` variant was discarding `rolledDice` entirely), and the guaranteed dice-spin-into-place animation was moved from the UI component into `GameService` so the AI's own rolls animate too, not just the human's. The GitHub Pages deploy pipeline (separate from these milestones) is also live and working.
+**Done:** Milestones 1, 2, and 3 in full. Milestone 4 is mostly done \- 3D CSS dice with CSS-drawn faces and pips, a working AI opponent (heuristic bank/continue decisions, paced to be watchable, difficulty-tiered), and the "High Roller" redesign across every screen above (felt table, brass/sage tokens, phone-first layout with a desktop three-column layout, live selection preview and at-risk total, inline resume, native-dialog rules sheet, Leave table). Accessibility pass alongside it: dice have aria-labels and a restored focus ring (`all: unset` had stripped it), progress bars expose `role="progressbar"`, the rules sheet is a real modal dialog. Earlier playtest fixes still hold: a bust shows the dice that caused it, and the dice-spin animation lives in `GameService` so the AI's rolls animate too. The GitHub Pages deploy pipeline is live.
+
+Dice notes: the pip PNGs (`public/dice/`) were replaced by CSS circles (they read as plus signs at small sizes). The rounded, shaded material lives on a nested `.face-surface` with no transform of its own, to avoid a Chromium halo bug when `border-radius` shares an element with the 3D transform; `.face` keeps `backface-visibility: hidden`, without which the cube's side faces show as slivers at the edges at larger die sizes.
+
+Deliberately *not* built: a "set aside dice" strip showing dice kept earlier in the turn. The engine folds kept dice into `turnScore` and no rule needs them afterwards, and the selection highlight plus at-risk total already convey it, so tracking them just for display wasn't worth the extra state.
 
 **Open, in priority order:**
 
-1. **Remaining storyboard gaps** \- no way to quit/abandon an in-progress game, no settings screen.
-2. **Milestone 5: PWA packaging** \- manifest.json, service worker, offline verification. Nothing built yet.
-3. **Deferred Milestone 4 items** (explicitly lower priority, agreed not to block a playable game):  
+1. **Visual polish leftovers:**  
+   \- \[ \] Stagger the dice roll animation so all 6 dice don't spin in perfect unison \- a small index-based animation-delay in `die.ts`/`die.css`.  
+   \- \[ \] Dealer "fast-forward" button to skip the AI's paced reveal (needs a `GameService` hook).
+2. **Remaining storyboard gap** \- no settings screen.
+3. **Milestone 5: PWA packaging** \- manifest.json, service worker, offline verification. Nothing built yet. Note the fonts currently load from Google Fonts; the service worker will need to cache them (or they should be self-hosted) for true offline play.
+4. **Deferred Milestone 4 items** (explicitly lower priority, agreed not to block a playable game):  
    \- Real `transitionend`\-driven staging gate, replacing the artificial `setTimeout` delay.  
    \- Hardware hooks (vibrate, wakeLock) \- nice-to-have, deferred to a much later stage.
 
@@ -270,7 +279,7 @@ A text-based storyboard of what a player actually moves through in a play sessio
 ### **Milestone 4: CSS Aesthetics, Hardware Hooks & AI**
 
 * \[x\] Replace plain numerical buttons with DOM cubes styled with CSS 3D transforms.  
-* \[x\] Die-face textures sourced (user-provided pixel art) and wired in as the CSS cube face backgrounds.  
+* \[x\] Die faces: originally user-provided pixel art as CSS cube face backgrounds, since replaced by CSS-drawn faces and pips.  
 * \[ \] Bind state machine staging variables directly to the animationend lifecycle hooks \- still using the artificial setTimeout delay from Milestone 3, not real transition-driven gating.  
 * \[ \] Inject hardware API bindings (vibrate, wakeLock) inside corresponding event streams \- deferred for now, nice-to-have for later.  
 * \[x\] Write the Heuristic AI Opponent implementation and hook it into the turn/match state machine. Bust-probability table is derived by brute-force enumeration against the real scoring rules (not hardcoded guesses); difficulty tiers map to risk-tolerance/greed personality parameters; the AI drives itself through GameService's existing staging gate.  

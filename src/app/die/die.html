@@ -5,11 +5,18 @@
   [class.placeholder]="placeholder()"
   [disabled]="disabled()"
   [attr.aria-pressed]="selected()"
+  [attr.aria-label]="placeholder() ? 'Die, not rolled yet' : 'Die showing ' + value()"
   (click)="onClick()"
 >
   <span class="cube" [style.transform]="cubeTransform()">
     @for (face of faces; track face.cssClass) {
-      <span class="face" [class]="face.cssClass" [style.background-image]="faceImage(face.value)"></span>
+      <span class="face" [class]="face.cssClass">
+        <span class="face-surface">
+          @for (pip of pipPositions(face.value); track $index) {
+            <span class="pip" [style.top.%]="pip.top" [style.left.%]="pip.left"></span>
+          }
+        </span>
+      </span>
     }
   </span>
 </button>

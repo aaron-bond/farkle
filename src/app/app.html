@@ -1,182 +1,180 @@
-@if (pendingResume(); as pending) {
-  <div class="modal-backdrop">
-    <div class="modal-card">
-      <h2>Continue Saved Game?</h2>
-      <p>We found a previous game in progress. Would you like to resume? Here are the current scores:</p>
-      <dl class="score-summary">
-        <div class="score-row">
-          <dt>You</dt>
-          <dd>{{ pending.playerTotalScore }} banked</dd>
-        </div>
-        <div class="score-row">
-          <dt>Opponent</dt>
-          <dd>{{ pending.aiTotalScore }} banked</dd>
-        </div>
-        <div class="score-row">
-          <dt>Current turn ({{ pending.activePlayer === 'human' ? 'you' : 'AI' }})</dt>
-          <dd>{{ pending.turnState.turnScore }} unbanked</dd>
-        </div>
-      </dl>
-      <button class="btn btn-primary" (click)="resumeSavedGame()">Continue Saved Game</button>
-      <button class="btn" (click)="discardSavedGame()">Start New Game</button>
+@if (activeState(); as match) {
+  <div class="page">
+    <header class="topbar">
+      <h1 class="wordmark">Farkle</h1>
+      <button class="btn btn-small" (click)="leaveTable()">Leave table</button>
+      <button class="icon-btn" (click)="openRules()" aria-label="Rules">?</button>
+    </header>
+
+    <div class="game">
+      <app-scoreboard
+        class="game-players"
+        [playerScore]="match.playerTotalScore"
+        [aiScore]="match.aiTotalScore"
+        [targetScore]="match.targetScore"
+        [difficulty]="match.difficulty"
+        [activePlayer]="match.activePlayer"
+        [pendingScore]="match.winner ? 0 : atRisk()"
+      />
+
+      <section
+        class="table"
+        [class.table-dealer]="!isHumanTurn()"
+        [class.table-bust]="phase() === 'busted'"
+        aria-label="Dice table"
+      >
+        @if (match.winner; as winner) {
+          <div class="table-result">
+            <h2 class="headline" [class.headline-good]="winner === 'human'">
+              {{ winner === 'human' ? 'You win' : 'Dealer wins' }}
+            </h2>
+            <p class="table-note">
+              {{ match.playerTotalScore | number }} – {{ match.aiTotalScore | number }}
+            </p>
+          </div>
+        } @else {
+          <span class="turn-chip">{{ isHumanTurn() ? 'Your turn' : "Dealer's turn" }}</span>
+
+          @switch (phase()) {
+            @case ('ready') {
+              <div class="dice-row">
+                @for (die of placeholderDice(); track $index) {
+                  <app-die [value]="die" [disabled]="true" [placeholder]="true" />
+                }
+              </div>
+              <p class="table-note">
+                {{ isHumanTurn() ? 'Roll to start your turn' : 'Dealer is rolling…' }}
+              </p>
+            }
+            @case ('awaitingSelection') {
+              <div class="dice-row">
+                @for (die of rolledDice(); track $index) {
+                  <app-die
+                    [value]="die"
+                    [selected]="selectedIndices().includes($index)"
+                    [disabled]="isInputLocked() || !isHumanTurn()"
+                    [spin]="rollGeneration()"
+                    (toggle)="toggleDieSelection($index)"
+                  />
+                }
+              </div>
+              <p class="table-note">
+                {{ isHumanTurn() ? 'Tap dice to keep them' : 'Dealer is choosing…' }}
+              </p>
+            }
+            @case ('busted') {
+              <div class="dice-row">
+                @for (die of rolledDice(); track $index) {
+                  <app-die [value]="die" [disabled]="true" [spin]="rollGeneration()" />
+                }
+              </div>
+              <div class="table-result">
+                <h2 class="headline headline-bad">Farkle!</h2>
+                <p class="table-note">
+                  No scoring dice.
+                  @if (lostScore() > 0) {
+                    <strong class="lost"
+                      ><s>{{ lostScore() | number }}</s> lost</strong
+                    >
+                  }
+                </p>
+              </div>
+            }
+            @case ('banked') {
+              <div class="table-result">
+                <p class="eyebrow">{{ isHumanTurn() ? 'You banked' : 'Dealer banked' }}</p>
+                <h2 class="headline headline-good">+{{ turnScore() | number }}</h2>
+              </div>
+            }
+          }
+        }
+      </section>
+
+      <section class="sheet" aria-live="polite">
+        @if (match.winner) {
+          <button class="btn btn-primary btn-block" (click)="resetGame()">Play again</button>
+        } @else if (phase() === 'busted' || phase() === 'banked') {
+          <p class="sheet-status">{{ isHumanTurn() ? "Dealer's turn next" : 'Your turn next' }}</p>
+        } @else if (!isHumanTurn()) {
+          <div class="sheet-stats">
+            <p class="sheet-status sheet-status-dealer">Dealer is thinking…</p>
+            <div class="stat stat-right">
+              <span class="stat-label">Dealer at risk</span>
+              <span class="stat-value stat-value-big stat-value-dealer">{{
+                atRisk() | number
+              }}</span>
+            </div>
+          </div>
+        } @else if (phase() === 'ready') {
+          @if (turnScore() > 0) {
+            <div class="sheet-stats">
+              <div class="stat"></div>
+              <div class="stat stat-right">
+                <span class="stat-label stat-label-brass">At risk</span>
+                <span class="stat-value stat-value-big">{{ turnScore() | number }}</span>
+              </div>
+            </div>
+          }
+          <button
+            class="btn btn-primary btn-block"
+            (click)="rollDice()"
+            [disabled]="isInputLocked()"
+          >
+            Roll {{ diceLabel(diceToRoll()) }}
+          </button>
+        } @else {
+          <div class="sheet-stats">
+            <div class="stat">
+              <span class="stat-label">Selection</span>
+              @if (selectionInvalid()) {
+                <span class="stat-value stat-value-bad">Doesn't score</span>
+              } @else {
+                <span class="stat-value">{{
+                  selection() ? '+' + (selection()!.score | number) : '—'
+                }}</span>
+              }
+            </div>
+            <div class="stat stat-right">
+              <span class="stat-label stat-label-brass">At risk</span>
+              <span class="stat-value stat-value-big">{{ atRisk() | number }}</span>
+            </div>
+          </div>
+          <div class="sheet-actions">
+            <button class="btn" (click)="pass()" [disabled]="isInputLocked() || !canBank()">
+              Bank {{ atRisk() | number }}
+            </button>
+            <button
+              class="btn btn-primary"
+              (click)="rollAgain()"
+              [disabled]="isInputLocked() || !canRollAgain()"
+            >
+              @if (!canRollAgain()) {
+                Pick scoring dice
+              } @else if (isHotDiceSelection()) {
+                Hot dice! Roll 6
+              } @else {
+                Roll {{ diceLabel(diceAfterSelection()) }}
+              }
+            </button>
+          </div>
+          @if (selectionError()) {
+            <p class="error-text">{{ selectionError() }}</p>
+          }
+        }
+      </section>
+
+      <app-scoring-guide class="game-guide" />
     </div>
   </div>
 } @else {
-  <div class="page">
-    <div class="page-header">
-      <h1>Farkle</h1>
-      <button class="btn btn-compact" (click)="openRules()">Rules</button>
-    </div>
-
-    @if (!activeState()) {
-      <div class="stacked-actions">
-        <button class="btn" (click)="startGame('easy')">Easy (1500)</button>
-        <button class="btn" (click)="startGame('medium')">Medium (3000)</button>
-        <button class="btn" (click)="startGame('hard')">Hard (5000)</button>
-      </div>
-    } @else {
-      <div class="score-banner">
-        <span>You: {{ activeState()!.playerTotalScore }}</span>
-        <span>AI: {{ activeState()!.aiTotalScore }}</span>
-        <span>Target: {{ activeState()!.targetScore }}</span>
-      </div>
-
-      @if (activeState()!.winner; as winner) {
-        <p class="result-banner" [class.result-good]="winner === 'human'" [class.result-bad]="winner !== 'human'">
-          {{ winner === 'human' ? 'You win!' : 'AI wins!' }}
-        </p>
-        <button class="btn btn-primary" (click)="resetGame()">Play again</button>
-      } @else {
-        <p class="turn-indicator">{{ activeState()!.activePlayer === 'human' ? "Your turn" : "AI's turn" }}</p>
-
-        @switch (phase()) {
-          @case ('ready') {
-            <div class="dice-row">
-              @for (die of placeholderDice(); track $index) {
-                <app-die [value]="die" [disabled]="true" [placeholder]="true" />
-              }
-            </div>
-            @if (isHumanTurn()) {
-              <button class="btn btn-primary" (click)="rollDice()" [disabled]="isInputLocked()">Roll</button>
-            }
-          }
-          @case ('awaitingSelection') {
-            <p class="turn-score">Turn score so far: {{ turnScore() }}</p>
-            <div class="dice-row">
-              @for (die of rolledDice(); track $index) {
-                <app-die
-                  [value]="die"
-                  [selected]="selectedIndices().includes($index)"
-                  [disabled]="isInputLocked()"
-                  [spin]="rollGeneration()"
-                  (toggle)="toggleDieSelection($index)"
-                />
-              }
-            </div>
-            @if (isHumanTurn()) {
-              <div class="action-row">
-                <button class="btn btn-primary" (click)="rollAgain()" [disabled]="isInputLocked() || selectedIndices().length === 0">
-                  {{ selectedIndices().length > 0 ? 'Score & Roll Again' : 'Roll Again' }}
-                </button>
-                <button class="btn" (click)="pass()" [disabled]="isInputLocked()">
-                  {{ selectedIndices().length > 0 ? 'Score & Pass' : 'Pass' }}
-                </button>
-              </div>
-              @if (selectionError()) {
-                <p class="error-text">{{ selectionError() }}</p>
-              }
-            }
-          }
-          @case ('busted') {
-            <div class="dice-row">
-              @for (die of rolledDice(); track $index) {
-                <app-die [value]="die" [disabled]="true" [spin]="rollGeneration()" />
-              }
-            </div>
-            <p class="result-banner result-bad">Farkle! Turn lost.</p>
-          }
-          @case ('banked') {
-            <p class="result-banner result-good">Banked {{ turnScore() }} points.</p>
-          }
-        }
-      }
-    }
-  </div>
+  <app-landing
+    [savedGame]="pendingResume()"
+    (start)="startGame($event)"
+    (resume)="resumeSavedGame()"
+    (openRules)="openRules()"
+  />
 }
 
 @if (showRules()) {
-  <div class="modal-backdrop" (click)="closeRules()">
-    <div class="modal-card rules-card" (click)="$event.stopPropagation()">
-      <div class="rules-flip" [class.flipped]="showFullRules()">
-        <div class="rules-face rules-face-front">
-          <div class="rules-face-content">
-            <h2>Rules</h2>
-
-            <table class="rules-table">
-              <caption>Scoring</caption>
-              <tbody>
-                <tr><td>Single 1</td><td>100</td></tr>
-                <tr><td>Single 5</td><td>50</td></tr>
-                <tr><td>1‑2‑3‑4‑5</td><td>500</td></tr>
-                <tr><td>2‑3‑4‑5‑6</td><td>750</td></tr>
-                <tr><td>1‑2‑3‑4‑5‑6</td><td>1500</td></tr>
-              </tbody>
-            </table>
-
-            <table class="rules-table">
-              <caption>Three of a kind</caption>
-              <tbody>
-                <tr><td>1‑1‑1</td><td>1000</td></tr>
-                <tr><td>2‑2‑2</td><td>200</td></tr>
-                <tr><td>3‑3‑3</td><td>300</td></tr>
-                <tr><td>4‑4‑4</td><td>400</td></tr>
-                <tr><td>5‑5‑5</td><td>500</td></tr>
-                <tr><td>6‑6‑6</td><td>600</td></tr>
-              </tbody>
-            </table>
-            <p class="rules-note">4+ of a kind doubles per extra die.</p>
-          </div>
-
-          <div class="rules-actions">
-            <button class="btn btn-primary" (click)="flipToFullRules()">Full Rules &rarr;</button>
-            <button class="btn" (click)="closeRules()">Close</button>
-          </div>
-        </div>
-
-        <div class="rules-face rules-face-back">
-          <div class="rules-face-content">
-            <h2>How to Play</h2>
-            <ul class="rules-guide-list">
-              <li>Roll all 6 dice to start your turn.</li>
-              <li>You must set aside at least one scoring die from every roll before you're allowed to roll again.</li>
-              <li>
-                <strong>Roll Again</strong> to re-roll what's left and risk it, or <strong>Pass</strong> to bank your
-                turn score and end your turn.
-              </li>
-              <li>
-                <strong>Hot dice:</strong> use up all 6 dice and you get to roll all 6 fresh again, keeping your turn
-                score.
-              </li>
-              <li>
-                <strong>Farkle:</strong> roll with no scoring dice at all and you lose everything banked so far this
-                turn - not just the bad roll, the whole turn.
-              </li>
-              <li>
-                First to bank at or past the target wins immediately - there's no final round for the other player.
-              </li>
-              <li>
-                Target score depends on difficulty: Easy 1500 / Medium 3000 / Hard 5000. Higher difficulty also
-                makes the AI opponent play more aggressively.
-              </li>
-            </ul>
-          </div>
-
-          <div class="rules-actions">
-            <button class="btn btn-primary" (click)="flipToScoring()">&larr; Back to Scoring</button>
-            <button class="btn" (click)="closeRules()">Close</button>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
+  <app-rules-sheet (closed)="closeRules()" />
 }

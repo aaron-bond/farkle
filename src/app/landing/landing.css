@@ -1,0 +1,312 @@
+/*
+ * Phone: a single column - hero, resume card, table choice, and the deal
+ * button pushed to the bottom where a thumb reaches it. Desktop: the text
+ * column sits beside a felt table scattered with dice (the hero dice move
+ * there, so they're hidden above the title).
+ */
+:host {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  min-height: 100dvh;
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 12px 16px max(24px, env(safe-area-inset-bottom));
+}
+
+.topbar {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.layout,
+.intro {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.hero {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.hero-dice {
+  --die-size: 64px;
+  display: flex;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+/* Static decorative dice - pointer-events off so they never look clickable. */
+.tilt {
+  display: inline-block;
+  pointer-events: none;
+}
+
+.tilt-a {
+  transform: translateY(14px) rotate(-14deg);
+}
+
+.tilt-b {
+  transform: rotate(8deg);
+}
+
+.tilt-c {
+  transform: translateY(18px) rotate(22deg);
+}
+
+h1 {
+  margin: 0;
+  font: 400 4rem/1 var(--font-display);
+  color: var(--brass);
+  text-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+}
+
+.tagline {
+  margin: 6px 0 0;
+  color: var(--text-soft);
+}
+
+.eyebrow {
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--brass);
+}
+
+.eyebrow-muted {
+  color: var(--text-muted);
+}
+
+.resume {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: 16px;
+  border: 1px solid rgba(224, 180, 80, 0.45);
+  background: rgba(0, 0, 0, 0.3);
+  color: var(--ivory);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.resume-text {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.resume-scores {
+  font-weight: 700;
+}
+
+.resume-cta {
+  font-weight: 800;
+  color: var(--brass);
+}
+
+.tables {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.tables legend {
+  padding: 0;
+  margin-bottom: 10px;
+}
+
+.table-option {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-height: 64px;
+  padding: 12px 16px;
+  border-radius: 16px;
+  border: 2px solid rgba(255, 255, 255, 0.1);
+  background: rgba(0, 0, 0, 0.22);
+  color: var(--ivory);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.table-option.chosen {
+  border-color: var(--brass);
+  background: rgba(224, 180, 80, 0.14);
+  box-shadow: 0 0 20px rgba(224, 180, 80, 0.2);
+}
+
+.table-option-text {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.table-name {
+  font-weight: 800;
+}
+
+.table-desc {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+.chosen .table-desc {
+  color: var(--text-soft);
+}
+
+.table-target {
+  font: 400 1.4rem var(--font-display);
+  color: var(--text-soft);
+}
+
+.chosen .table-target {
+  color: var(--brass);
+}
+
+.resume:focus-visible,
+.table-option:focus-visible {
+  outline: 3px solid var(--ivory);
+  outline-offset: 2px;
+}
+
+.deal {
+  margin-top: auto;
+  min-height: 60px;
+  font-size: 1.1rem;
+}
+
+.showcase {
+  display: none;
+}
+
+@media (min-width: 960px) {
+  :host {
+    padding: 24px;
+  }
+
+  .layout {
+    flex-direction: row;
+    align-items: center;
+    gap: 48px;
+  }
+
+  .intro {
+    flex: 1 1 0;
+    justify-content: center;
+    gap: 24px;
+  }
+
+  .hero {
+    align-items: flex-start;
+    text-align: left;
+  }
+
+  .hero-dice {
+    display: none;
+  }
+
+  h1 {
+    font-size: 7rem;
+    line-height: 0.95;
+  }
+
+  .tagline {
+    font-size: 1.25rem;
+  }
+
+  .resume {
+    max-width: 520px;
+  }
+
+  .tables {
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+
+  .tables legend {
+    width: 100%;
+  }
+
+  .table-option {
+    flex: 1 1 160px;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+    padding: 16px;
+  }
+
+  .table-target {
+    order: -1;
+    font-size: 1.9rem;
+  }
+
+  .deal {
+    align-self: flex-start;
+    margin-top: 0;
+    padding: 0 40px;
+  }
+
+  /* Same felt + wood rim as the play screen's table. */
+  .showcase {
+    --die-size: 96px;
+    flex: 1 1 0;
+    position: relative;
+    display: block;
+    height: 560px;
+    border: 18px solid transparent;
+    border-radius: 48px;
+    background:
+      radial-gradient(ellipse at 50% 40%, var(--felt-hi) 0%, var(--felt) 80%) padding-box,
+      var(--wood-texture, none) center / 320px border-box,
+      var(--rim) border-box;
+    box-shadow:
+      inset 0 0 70px rgba(0, 0, 0, 0.55),
+      0 20px 50px rgba(0, 0, 0, 0.5);
+  }
+
+  .showcase .tilt {
+    position: absolute;
+  }
+
+  .showcase .tilt-a {
+    left: 14%;
+    top: 16%;
+  }
+
+  .showcase .tilt-b {
+    left: 52%;
+    top: 10%;
+  }
+
+  .showcase .tilt-c {
+    left: 30%;
+    top: 46%;
+  }
+
+  .showcase .tilt-d {
+    left: 64%;
+    top: 50%;
+    transform: rotate(-8deg);
+  }
+
+  .showcase .tilt-e {
+    left: 42%;
+    top: 72%;
+    transform: rotate(4deg);
+  }
+}

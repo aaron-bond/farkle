@@ -1,0 +1,59 @@
+<div class="topbar">
+  <button class="icon-btn" (click)="openRules.emit()" aria-label="Rules">?</button>
+</div>
+
+<div class="layout">
+  <div class="intro">
+    <div class="hero">
+      <div class="hero-dice" aria-hidden="true">
+        <span class="tilt tilt-a"><app-die [value]="1" [disabled]="true" /></span>
+        <span class="tilt tilt-b"><app-die [value]="5" [disabled]="true" /></span>
+        <span class="tilt tilt-c"><app-die [value]="1" [disabled]="true" /></span>
+      </div>
+      <h1>Farkle</h1>
+      <p class="tagline">Push your luck. Bank before it bites.</p>
+    </div>
+
+    @if (savedGame(); as saved) {
+      <button class="resume" (click)="resume.emit()">
+        <span class="resume-text">
+          <span class="eyebrow">Game in progress · {{ tableName(saved.difficulty) }}</span>
+          <span class="resume-scores">
+            You {{ saved.playerTotalScore | number }} · Dealer {{ saved.aiTotalScore | number }}
+          </span>
+        </span>
+        <span class="resume-cta">Resume →</span>
+      </button>
+    }
+
+    <fieldset class="tables">
+      <legend class="eyebrow eyebrow-muted">Choose your table</legend>
+      @for (table of tables; track table.difficulty) {
+        <button
+          class="table-option"
+          [class.chosen]="chosen() === table.difficulty"
+          [attr.aria-pressed]="chosen() === table.difficulty"
+          (click)="chosen.set(table.difficulty)"
+        >
+          <span class="table-option-text">
+            <span class="table-name">{{ table.name }}</span>
+            <span class="table-desc">{{ table.description }}</span>
+          </span>
+          <span class="table-target">{{ table.target | number }}</span>
+        </button>
+      }
+    </fieldset>
+
+    <button class="btn btn-primary deal" (click)="start.emit(chosen())">
+      Deal me in · {{ tableName(chosen()) }}
+    </button>
+  </div>
+
+  <div class="showcase" aria-hidden="true">
+    <span class="tilt tilt-a"><app-die [value]="1" [disabled]="true" /></span>
+    <span class="tilt tilt-b"><app-die [value]="5" [disabled]="true" /></span>
+    <span class="tilt tilt-c"><app-die [value]="1" [disabled]="true" /></span>
+    <span class="tilt tilt-d"><app-die [value]="1" [disabled]="true" /></span>
+    <span class="tilt tilt-e"><app-die [value]="6" [disabled]="true" /></span>
+  </div>
+</div>

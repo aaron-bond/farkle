@@ -362,4 +362,71 @@ describe('GameService', () => {
       expect(storage.saved).toBeNull();
     });
   });
+
+  describe('leaveTable', () => {
+    it('cuts off an AI turn in flight and offers the game as a pending resume, keeping it saved', async () => {
+      const storage = new FakeGameStorage();
+      const service = configureWithDice([1, 5, 2, 3, 4, 6], storage);
+      service.startGame('easy', 'ai');
+      await vi.advanceTimersByTimeAsync(400); // the AI's roll stages, then it starts "thinking"
+      const atLeave = service.activeState()!;
+      expect(atLeave.turnState.phase).toBe('awaitingSelection');
+
+      service.leaveTable();
+      expect(service.activeState()).toBeNull();
+      expect(service.selectedIndices()).toEqual([]);
+      expect(service.isInputLocked()).toBe(false);
+      expect(service.pendingResume()).toEqual(atLeave);
+
+      // Every step that was already waiting must land as a no-op, not put the
+      // abandoned game back on the table or overwrite the save.
+      await vi.runAllTimersAsync();
+      expect(service.activeState()).toBeNull();
+      expect(service.selectedIndices()).toEqual([]);
+      expect(storage.saved).toEqual(atLeave);
+    });
+
+    it('a game left mid-AI-turn resumes and plays on from where it was saved', async () => {
+      const service = configureWithDice([1, 2, 3, 4, 5, 6]);
+      service.startGame('easy', 'ai');
+      await vi.advanceTimersByTimeAsync(400);
+      service.leaveTable();
+      await vi.runAllTimersAsync();
+
+      service.resumeSavedGame();
+      await vi.runAllTimersAsync();
+
+      const match = service.activeState()!;
+      expect(match.winner).toBe('ai');
+      expect(match.aiTotalScore).toBe(1500);
+    });
+
+    it('cuts off a human action still staging, without promoting its result', async () => {
+      const service = configureWithDice([1, 2, 3, 4, 4, 4]);
+      service.startGame('medium');
+
+      const rollPromise = service.rollDice();
+      service.leaveTable();
+      await vi.runAllTimersAsync();
+      await rollPromise;
+
+      expect(service.activeState()).toBeNull();
+      expect(service.pendingResume()?.turnState.phase).toBe('ready');
+    });
+
+    it('clears a finished game instead of offering it', async () => {
+      const storage = new FakeGameStorage();
+      const service = configureWithDice([1, 2, 3, 4, 5, 6], storage);
+      service.startGame('easy', 'ai');
+      await vi.runAllTimersAsync();
+      expect(service.activeState()?.winner).toBe('ai');
+
+      service.leaveTable();
+      await vi.advanceTimersByTimeAsync(0);
+
+      expect(service.activeState()).toBeNull();
+      expect(service.pendingResume()).toBeNull();
+      expect(storage.saved).toBeNull();
+    });
+  });
 });
